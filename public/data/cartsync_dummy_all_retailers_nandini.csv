@@ -1,0 +1,289 @@
+﻿retailer,pincode,brand,product_name,pack_size,variant,price_inr,currency,source_product_id,rating,rating_count,availability,product_url,price_origin,data_quality_flag,dataset_date
+BigBasket,560024,Nandini,Pure Ghee/Tuppa,500 ml,,321.26,INR,152541,4.1,16864,not_provided,https://www.bigbasket.com/pd/152541/nandini-pure-ghee-500-ml-bottle/,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Pure Ghee/Tuppa,500 ml,,311.53,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Pure Ghee/Tuppa,500 ml,,338.23,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Pure Ghee/Tuppa,500 ml,,342.87,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Pure Ghee/Tuppa,500 ml,,342.20,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Pure Ghee/Tuppa,500 ml,,297.50,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Shubham Milk,1 L,,43.00,INR,40149834,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Shubham Milk,1 L,,41.36,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Shubham Milk,1 L,,44.35,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Shubham Milk,1 L,,45.98,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Shubham Milk,1 L,,45.45,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Shubham Milk,1 L,,40.36,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Pasteurised Toned Milk,1000 ml,,37.00,INR,40158264,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Pasteurised Toned Milk,1000 ml,,35.31,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Pasteurised Toned Milk,1000 ml,,39.12,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Pasteurised Toned Milk,1000 ml,,39.13,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Pasteurised Toned Milk,1000 ml,,38.76,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Pasteurised Toned Milk,1000 ml,,34.82,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Curd,500 g,500 g - Pouch,34.00,INR,40149830,4.0,14467,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Curd,500 g,500 g - Pouch,32.40,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Curd,500 g,500 g - Pouch,35.49,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Curd,500 g,500 g - Pouch,35.59,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Curd,500 g,500 g - Pouch,36.07,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Curd,500 g,500 g - Pouch,31.65,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,GoodLife UHT Treated Toned Milk,1 L,,64.00,INR,100285703,4.1,13208,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,GoodLife UHT Treated Toned Milk,1 L,,61.20,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,GoodLife UHT Treated Toned Milk,1 L,,67.06,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,GoodLife UHT Treated Toned Milk,1 L,,68.35,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,GoodLife UHT Treated Toned Milk,1 L,,66.34,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,GoodLife UHT Treated Toned Milk,1 L,,58.77,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,GoodLife Toned Milk,500 ml,,560.00,INR,244999,3.9,4805,not_provided,,user_supplied,verify_price_outlier,2026-11-11
+JioMart,560024,Nandini,GoodLife Toned Milk,500 ml,,54.37,INR,,,,in_stock,,synthetic,synthetic_estimate_based_on_inferred_baseline,2026-11-11
+Swiggy Instamart,560024,Nandini,GoodLife Toned Milk,500 ml,,57.52,INR,,,,out_of_stock,,synthetic,synthetic_estimate_based_on_inferred_baseline,2026-11-11
+Blinkit,560024,Nandini,GoodLife Toned Milk,500 ml,,59.91,INR,,,,in_stock,,synthetic,synthetic_estimate_based_on_inferred_baseline,2026-11-11
+Zepto,560024,Nandini,GoodLife Toned Milk,500 ml,,59.39,INR,,,,in_stock,,synthetic,synthetic_estimate_based_on_inferred_baseline,2026-11-11
+DMart,560024,Nandini,GoodLife Toned Milk,500 ml,,52.40,INR,,,,in_stock,,synthetic,synthetic_estimate_based_on_inferred_baseline,2026-11-11
+BigBasket,560024,Nandini,Homogenised Pasteurised Cow's Pure Milk,500 ml,500 ml - Pouch,29.00,INR,40149831,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Homogenised Pasteurised Cow's Pure Milk,500 ml,500 ml - Pouch,27.78,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Homogenised Pasteurised Cow's Pure Milk,500 ml,500 ml - Pouch,29.85,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Homogenised Pasteurised Cow's Pure Milk,500 ml,500 ml - Pouch,31.00,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Homogenised Pasteurised Cow's Pure Milk,500 ml,500 ml - Pouch,30.95,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Homogenised Pasteurised Cow's Pure Milk,500 ml,500 ml - Pouch,27.27,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Fresh Paneer,1 kg,,320.00,INR,270621,3.8,5694,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Fresh Paneer,1 kg,,308.75,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Fresh Paneer,1 kg,,328.83,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Fresh Paneer,1 kg,,341.01,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Fresh Paneer,1 kg,,341.66,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Fresh Paneer,1 kg,,299.18,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Samrudhi Milk,500 ml,500 ml - Pouch,28.00,INR,40161616,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Samrudhi Milk,500 ml,500 ml - Pouch,27.13,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Samrudhi Milk,500 ml,500 ml - Pouch,28.67,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Samrudhi Milk,500 ml,500 ml - Pouch,30.03,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Samrudhi Milk,500 ml,500 ml - Pouch,29.01,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Samrudhi Milk,500 ml,500 ml - Pouch,26.11,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Goodlife Slim Skimmed Milk,500 ml,,540.00,INR,245504,3.9,3873,not_provided,,user_supplied,verify_price_outlier,2026-11-11
+JioMart,560024,Nandini,Goodlife Slim Skimmed Milk,500 ml,,53.03,INR,,,,in_stock,,synthetic,synthetic_estimate_based_on_inferred_baseline,2026-11-11
+Swiggy Instamart,560024,Nandini,Goodlife Slim Skimmed Milk,500 ml,,56.88,INR,,,,in_stock,,synthetic,synthetic_estimate_based_on_inferred_baseline,2026-11-11
+Blinkit,560024,Nandini,Goodlife Slim Skimmed Milk,500 ml,,57.59,INR,,,,out_of_stock,,synthetic,synthetic_estimate_based_on_inferred_baseline,2026-11-11
+Zepto,560024,Nandini,Goodlife Slim Skimmed Milk,500 ml,,56.67,INR,,,,out_of_stock,,synthetic,synthetic_estimate_based_on_inferred_baseline,2026-11-11
+DMart,560024,Nandini,Goodlife Slim Skimmed Milk,500 ml,,50.14,INR,,,,out_of_stock,,synthetic,synthetic_estimate_based_on_inferred_baseline,2026-11-11
+BigBasket,560024,Nandini,Unsalted Pasteurised Cooking Butter,500 g,,198.00,INR,242668,4.1,3626,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Unsalted Pasteurised Cooking Butter,500 g,,189.55,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Unsalted Pasteurised Cooking Butter,500 g,,205.20,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Unsalted Pasteurised Cooking Butter,500 g,,208.05,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Unsalted Pasteurised Cooking Butter,500 g,,208.42,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Unsalted Pasteurised Cooking Butter,500 g,,186.56,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Special Toned Milk,500 ml,500 ml - Pouch,32.00,INR,40212327,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Special Toned Milk,500 ml,500 ml - Pouch,30.56,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Special Toned Milk,500 ml,500 ml - Pouch,33.25,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Special Toned Milk,500 ml,500 ml - Pouch,33.39,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Special Toned Milk,500 ml,500 ml - Pouch,34.07,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Special Toned Milk,500 ml,500 ml - Pouch,29.43,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Medium Fat Paneer,200 g,200 g - Pouch,110.00,INR,40361896,3.8,65,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Medium Fat Paneer,200 g,200 g - Pouch,106.27,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Medium Fat Paneer,200 g,200 g - Pouch,114.33,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Medium Fat Paneer,200 g,200 g - Pouch,117.41,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Medium Fat Paneer,200 g,200 g - Pouch,116.66,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Medium Fat Paneer,200 g,200 g - Pouch,103.58,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Curd,415 g,415 g - Pouch,29.00,INR,40359295,4.5,131,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Curd,415 g,415 g - Pouch,27.88,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Curd,415 g,415 g - Pouch,29.77,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Curd,415 g,415 g - Pouch,30.62,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Curd,415 g,415 g - Pouch,30.58,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Curd,415 g,415 g - Pouch,26.91,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Dosa Batter - Whey Protein Based,900 g,900 g,80.00,INR,40342143,3.4,254,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Dosa Batter - Whey Protein Based,900 g,900 g,76.53,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Dosa Batter - Whey Protein Based,900 g,900 g,83.24,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Dosa Batter - Whey Protein Based,900 g,900 g,84.88,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Dosa Batter - Whey Protein Based,900 g,900 g,83.80,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Dosa Batter - Whey Protein Based,900 g,900 g,74.09,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,n-Pro Milk,500 ml,500 ml - Pouch,31.00,INR,40361893,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,n-Pro Milk,500 ml,500 ml - Pouch,30.26,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,n-Pro Milk,500 ml,500 ml - Pouch,31.87,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,n-Pro Milk,500 ml,500 ml - Pouch,33.13,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,n-Pro Milk,500 ml,500 ml - Pouch,32.55,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,n-Pro Milk,500 ml,500 ml - Pouch,28.37,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,GoodLife Gold Homogenised & UHT Sterilized Standardised Milk,1 L,1 L - Tetra Pak,80.00,INR,40006910,4.2,354,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,GoodLife Gold Homogenised & UHT Sterilized Standardised Milk,1 L,1 L - Tetra Pak,77.06,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,GoodLife Gold Homogenised & UHT Sterilized Standardised Milk,1 L,1 L - Tetra Pak,82.81,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,GoodLife Gold Homogenised & UHT Sterilized Standardised Milk,1 L,1 L - Tetra Pak,85.50,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,GoodLife Gold Homogenised & UHT Sterilized Standardised Milk,1 L,1 L - Tetra Pak,84.54,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,GoodLife Gold Homogenised & UHT Sterilized Standardised Milk,1 L,1 L - Tetra Pak,73.48,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Premium Probiotic Curd,400 ml,400 ml,38.00,INR,40359296,4.6,51,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Premium Probiotic Curd,400 ml,400 ml,36.75,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Premium Probiotic Curd,400 ml,400 ml,39.02,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Premium Probiotic Curd,400 ml,400 ml,40.82,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Premium Probiotic Curd,400 ml,400 ml,40.35,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Premium Probiotic Curd,400 ml,400 ml,35.58,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Milk Peda,250 g,250 g,160.00,INR,40326226,3.9,54,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Milk Peda,250 g,250 g,157.77,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Milk Peda,250 g,250 g,164.29,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Milk Peda,250 g,250 g,170.66,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Milk Peda,250 g,250 g,168.24,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Milk Peda,250 g,250 g,147.76,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Probiotic Mango Lassi,160 ml,160 ml - Pouch,15.00,INR,40361898,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Probiotic Mango Lassi,160 ml,160 ml - Pouch,14.81,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Probiotic Mango Lassi,160 ml,160 ml - Pouch,15.86,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Probiotic Mango Lassi,160 ml,160 ml - Pouch,15.70,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Probiotic Mango Lassi,160 ml,160 ml - Pouch,15.98,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Probiotic Mango Lassi,160 ml,160 ml - Pouch,13.98,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Dharwad Peda,250 g,250 g,150.00,INR,40326227,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Dharwad Peda,250 g,250 g,143.76,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Dharwad Peda,250 g,250 g,154.23,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Dharwad Peda,250 g,250 g,156.23,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Dharwad Peda,250 g,250 g,158.46,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Dharwad Peda,250 g,250 g,137.51,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Good Life Pure Ghee,500 ml,500 ml - Pouch,368.93,INR,40361894,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Good Life Pure Ghee,500 ml,500 ml - Pouch,359.06,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Good Life Pure Ghee,500 ml,500 ml - Pouch,383.71,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Good Life Pure Ghee,500 ml,500 ml - Pouch,394.75,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Good Life Pure Ghee,500 ml,500 ml - Pouch,385.29,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Good Life Pure Ghee,500 ml,500 ml - Pouch,349.28,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Kaju Katli,200 g,200 g,240.00,INR,40326231,3.8,24,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Kaju Katli,200 g,200 g,228.96,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Kaju Katli,200 g,200 g,247.40,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Kaju Katli,200 g,200 g,256.27,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Kaju Katli,200 g,200 g,248.30,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Kaju Katli,200 g,200 g,225.73,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Karadantu,250 g,250 g,215.00,INR,40342129,4.4,42,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Karadantu,250 g,250 g,208.45,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Karadantu,250 g,250 g,220.32,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Karadantu,250 g,250 g,226.11,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Karadantu,250 g,250 g,227.48,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Karadantu,250 g,250 g,200.98,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Probiotic Curd,200 g,200 g - Cup,35.00,INR,40360618,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Probiotic Curd,200 g,200 g - Cup,34.21,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Probiotic Curd,200 g,200 g - Cup,36.10,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Probiotic Curd,200 g,200 g - Cup,37.48,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Probiotic Curd,200 g,200 g - Cup,37.12,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Probiotic Curd,200 g,200 g - Cup,32.64,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Kunda,250 g,250 g,165.00,INR,40326233,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Kunda,250 g,250 g,160.97,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Kunda,250 g,250 g,173.52,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Kunda,250 g,250 g,177.25,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Kunda,250 g,250 g,173.00,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Kunda,250 g,250 g,151.49,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Khova Jamun In Sugar Syrup,500 g,500 g - Contains 15 Jamuns,150.00,INR,40326232,4.2,17,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Khova Jamun In Sugar Syrup,500 g,500 g - Contains 15 Jamuns,145.37,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Khova Jamun In Sugar Syrup,500 g,500 g - Contains 15 Jamuns,153.53,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Khova Jamun In Sugar Syrup,500 g,500 g - Contains 15 Jamuns,158.46,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Khova Jamun In Sugar Syrup,500 g,500 g - Contains 15 Jamuns,157.89,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Khova Jamun In Sugar Syrup,500 g,500 g - Contains 15 Jamuns,140.26,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Probiotic Strawberry Lassi,160 ml,160 ml - Pouch,15.00,INR,40361897,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Probiotic Strawberry Lassi,160 ml,160 ml - Pouch,14.61,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Probiotic Strawberry Lassi,160 ml,160 ml - Pouch,15.37,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Probiotic Strawberry Lassi,160 ml,160 ml - Pouch,16.17,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Probiotic Strawberry Lassi,160 ml,160 ml - Pouch,15.69,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Probiotic Strawberry Lassi,160 ml,160 ml - Pouch,13.90,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Khara Boondhi,180 g,180 g,60.00,INR,40326236,3.9,23,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Khara Boondhi,180 g,180 g,59.05,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Khara Boondhi,180 g,180 g,61.64,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Khara Boondhi,180 g,180 g,63.11,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Khara Boondhi,180 g,180 g,63.12,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Khara Boondhi,180 g,180 g,55.77,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Cashew Burfi,250 g,250 g,250.00,INR,40326230,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Cashew Burfi,250 g,250 g,239.70,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Cashew Burfi,250 g,250 g,261.58,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Cashew Burfi,250 g,250 g,262.20,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Cashew Burfi,250 g,250 g,265.57,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Cashew Burfi,250 g,250 g,232.85,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Millet Laddu,200 g,200 g,120.00,INR,40326235,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Millet Laddu,200 g,200 g,116.55,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Millet Laddu,200 g,200 g,123.09,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Millet Laddu,200 g,200 g,125.64,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Millet Laddu,200 g,200 g,125.91,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Millet Laddu,200 g,200 g,110.50,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Green Gram Ladoo,200 g,200 g,120.00,INR,40342133,4.0,30,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Green Gram Ladoo,200 g,200 g,117.19,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Green Gram Ladoo,200 g,200 g,122.85,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Green Gram Ladoo,200 g,200 g,128.56,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Green Gram Ladoo,200 g,200 g,124.54,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Green Gram Ladoo,200 g,200 g,111.71,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Besan Ladoo,200 g,200 g,140.00,INR,40326228,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Besan Ladoo,200 g,200 g,136.98,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Besan Ladoo,200 g,200 g,145.08,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Besan Ladoo,200 g,200 g,147.83,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Besan Ladoo,200 g,200 g,148.20,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Besan Ladoo,200 g,200 g,130.45,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Benne Murukku,180 g,180 g,60.00,INR,40342140,4.0,24,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Benne Murukku,180 g,180 g,57.94,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Benne Murukku,180 g,180 g,61.74,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Benne Murukku,180 g,180 g,63.67,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Benne Murukku,180 g,180 g,62.21,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Benne Murukku,180 g,180 g,55.38,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Ladagi Ladoo,200 g,200 g,110.00,INR,40342132,3.9,19,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Ladagi Ladoo,200 g,200 g,105.38,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Ladagi Ladoo,200 g,200 g,114.45,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Ladagi Ladoo,200 g,200 g,117.93,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Ladagi Ladoo,200 g,200 g,113.83,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Ladagi Ladoo,200 g,200 g,101.84,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Coconut Burfi,200 g,200 g,150.00,INR,40326229,4.0,20,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Coconut Burfi,200 g,200 g,145.92,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Coconut Burfi,200 g,200 g,156.49,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Coconut Burfi,200 g,200 g,157.50,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Coconut Burfi,200 g,200 g,156.21,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Coconut Burfi,200 g,200 g,140.91,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Goodlife Flavoured Milk Pista,180 ml,180 ml - PET Bottle,25.00,INR,40256631,4.2,43,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Goodlife Flavoured Milk Pista,180 ml,180 ml - PET Bottle,24.58,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Goodlife Flavoured Milk Pista,180 ml,180 ml - PET Bottle,26.37,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Goodlife Flavoured Milk Pista,180 ml,180 ml - PET Bottle,26.08,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Goodlife Flavoured Milk Pista,180 ml,180 ml - PET Bottle,26.71,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Goodlife Flavoured Milk Pista,180 ml,180 ml - PET Bottle,23.38,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Goodlife Vanilla Milkshake,180 ml,180 ml - PET Bottle,30.00,INR,40256633,4.3,32,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Goodlife Vanilla Milkshake,180 ml,180 ml - PET Bottle,28.93,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Goodlife Vanilla Milkshake,180 ml,180 ml - PET Bottle,31.73,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Goodlife Vanilla Milkshake,180 ml,180 ml - PET Bottle,31.34,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Goodlife Vanilla Milkshake,180 ml,180 ml - PET Bottle,31.74,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Goodlife Vanilla Milkshake,180 ml,180 ml - PET Bottle,27.48,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Masala Kodubale,180 g,180 g,60.00,INR,40326237,3.9,22,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Masala Kodubale,180 g,180 g,58.13,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Masala Kodubale,180 g,180 g,61.93,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Masala Kodubale,180 g,180 g,62.60,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Masala Kodubale,180 g,180 g,61.96,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Masala Kodubale,180 g,180 g,55.16,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Goodlife Chocolate Milk Shake,180 ml,180 ml - PET Bottle,30.00,INR,40256634,3.9,28,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Goodlife Chocolate Milk Shake,180 ml,180 ml - PET Bottle,28.86,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Goodlife Chocolate Milk Shake,180 ml,180 ml - PET Bottle,31.27,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Goodlife Chocolate Milk Shake,180 ml,180 ml - PET Bottle,31.38,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Goodlife Chocolate Milk Shake,180 ml,180 ml - PET Bottle,31.63,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Goodlife Chocolate Milk Shake,180 ml,180 ml - PET Bottle,28.18,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Bombay Mixture,180 g,180 g,60.00,INR,40342139,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Bombay Mixture,180 g,180 g,58.72,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Bombay Mixture,180 g,180 g,62.83,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Bombay Mixture,180 g,180 g,64.16,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Bombay Mixture,180 g,180 g,62.92,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Bombay Mixture,180 g,180 g,55.21,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Ullas Gulla,200 g,200 g,100.00,INR,40342135,4.1,29,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Ullas Gulla,200 g,200 g,98.17,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Ullas Gulla,200 g,200 g,102.18,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Ullas Gulla,200 g,200 g,107.84,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Ullas Gulla,200 g,200 g,104.76,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Ullas Gulla,200 g,200 g,92.87,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Peanut Burfi,200 g,200 g,115.00,INR,40342127,3.8,21,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Peanut Burfi,200 g,200 g,111.08,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Peanut Burfi,200 g,200 g,118.37,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Peanut Burfi,200 g,200 g,121.32,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Peanut Burfi,200 g,200 g,120.43,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Peanut Burfi,200 g,200 g,107.67,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Badam Burfi,200 g,200 g,210.00,INR,40342123,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Badam Burfi,200 g,200 g,202.19,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Badam Burfi,200 g,200 g,220.50,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Badam Burfi,200 g,200 g,225.15,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Badam Burfi,200 g,200 g,224.07,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Badam Burfi,200 g,200 g,196.18,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Jaggery Peda,200 g,200 g,140.00,INR,40342122,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Jaggery Peda,200 g,200 g,135.85,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Jaggery Peda,200 g,200 g,145.38,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Jaggery Peda,200 g,200 g,149.75,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Jaggery Peda,200 g,200 g,147.50,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Jaggery Peda,200 g,200 g,130.59,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Badam Halwa,100 g,100 g,70.00,INR,40342128,3.8,32,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Badam Halwa,100 g,100 g,67.47,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Badam Halwa,100 g,100 g,73.15,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Badam Halwa,100 g,100 g,73.37,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Badam Halwa,100 g,100 g,73.17,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Badam Halwa,100 g,100 g,64.12,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Elaichi Peda,200 g,200 g,150.00,INR,40342121,,,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Elaichi Peda,200 g,200 g,145.30,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Elaichi Peda,200 g,200 g,156.57,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Elaichi Peda,200 g,200 g,160.15,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Elaichi Peda,200 g,200 g,159.54,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Elaichi Peda,200 g,200 g,138.07,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+BigBasket,560024,Nandini,Chocolate Burfi,200 g,200 g,150.00,INR,40342125,4.1,15,not_provided,,user_supplied,provided_listing_value,2026-11-11
+JioMart,560024,Nandini,Chocolate Burfi,200 g,200 g,143.11,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Swiggy Instamart,560024,Nandini,Chocolate Burfi,200 g,200 g,154.64,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Blinkit,560024,Nandini,Chocolate Burfi,200 g,200 g,161.19,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+Zepto,560024,Nandini,Chocolate Burfi,200 g,200 g,155.12,INR,,,,in_stock,,synthetic,synthetic_estimate,2026-11-11
+DMart,560024,Nandini,Chocolate Burfi,200 g,200 g,137.11,INR,,,,out_of_stock,,synthetic,synthetic_estimate,2026-11-11
