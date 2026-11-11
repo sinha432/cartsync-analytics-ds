@@ -118,6 +118,8 @@ export function addTransaction({
   source = "manual",
   items = [],
   memberAllocations = [],
+  invoice = null,
+  id = createId(),
 }) {
   const cleanName = String(name || "").trim();
   const numericAmount = Number(amount);
@@ -135,7 +137,7 @@ export function addTransaction({
   }
 
   const transaction = {
-    id: createId(),
+    id,
     name: cleanName,
     amount: Math.round(numericAmount * 100) / 100,
     category: String(category || "Other"),
@@ -145,6 +147,16 @@ export function addTransaction({
     memberAllocations: Array.isArray(memberAllocations)
       ? memberAllocations
       : [],
+    ...(invoice && typeof invoice === "object"
+      ? {
+          invoice: {
+            storeName: String(invoice.storeName || "").trim() || null,
+            invoiceNumber: String(invoice.invoiceNumber || "").trim() || null,
+            invoiceDate: String(invoice.invoiceDate || "").trim() || null,
+            paymentMethod: String(invoice.paymentMethod || "").trim() || null,
+          }
+        }
+      : {}),
     createdAt: new Date().toISOString(),
   };
 

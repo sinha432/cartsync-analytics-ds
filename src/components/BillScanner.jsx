@@ -1,9 +1,16 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createWorker } from "tesseract.js";
-import { AlertTriangle, Camera, CheckCircle2, FileText, ScanLine, Trash2 } from "lucide-react";
+import { AlertTriangle, Camera, CheckCircle2, FileText, ScanLine, Search, Trash2 } from "lucide-react";
 import { fromBaseCurrency, toBaseCurrency } from "../services/appLocale";
 import { parseBillScan } from "../services/billScanService";
 import { calculateExpenseSplit } from "../services/expenseService";
+import { getTransactions, subscribeToLedger } from "../services/spendingLedger";
+import {
+  fetchAtlasBills,
+  clearAtlasToken,
+  getSavedAtlasToken,
+  saveAtlasToken
+} from "../services/billsApi";
 
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 const moneyInBase = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
@@ -14,6 +21,7 @@ function isValidAmount(value) {
 
 export default function BillScanner({ members, settings, onAddItems }) {
   const fileInput = useRef(null);
+  const initialAtlasToken = getSavedAtlasToken();
   const [file, setFile] = useState(null);
   const [reviewItems, setReviewItems] = useState([]);
   const [scanning, setScanning] = useState(false);
@@ -25,6 +33,40 @@ export default function BillScanner({ members, settings, onAddItems }) {
   const [additionalFees, setAdditionalFees] = useState("0");
   const [expectedTotal, setExpectedTotal] = useState("");
   const [acknowledgeMismatch, setAcknowledgeMismatch] = useState(false);
+  const [invoice, setInvoice] = useState({
+    storeName: "",
+    invoiceNumber: "",
+    invoiceDate: "",
+    paymentMethod: ""
+  });
+  const [historySearch, setHistorySearch] = useState("");
+  const [transactions, setTransactions] = useState(() => getTransactions());
+  const [atlasBills, setAtlasBills] = useState([]);
+  const [atlasTokenInput, setAtlasTokenInput] = useState(initialAtlasToken);
+  const [atlasToken, setAtlasToken] = useState(initialAtlasToken);
+  const [atlasStatus, setAtlasStatus] = useState(initialAtlasToken
+    ? "Connecting to MongoDB Atlas..."
+    : "Atlas is disconnected. Bill entries will be saved in this browser only.");
+  const [atlasError, setAtlasError] = useState("");
+
+  useEffect(() => subscribeToLedger(setTransactions), []);
+  useEffect(() => {
+    if (!atlasToken) return undefined;
+
+    const controller = new AbortController();
+    fetchAtlasBills(atlasToken, historySearch, controller.signal)
+      .then((bills) => {
+        setAtlasBills(bills);
+        setAtlasStatus("Connected to MongoDB Atlas.");
+      })
+      .catch((requestError) => {
+        if (requestError.name === "AbortError") return;
+        setAtlasError(requestError.message);
+        setAtlasStatus("Could not load bills from MongoDB Atlas.");
+      });
+
+    return () => controller.abort();
+  }, [atlasToken, historySearch]);
 
   const selectedItems = useMemo(
     () => reviewItems.filter((item) => item.included),
@@ -88,6 +130,45 @@ export default function BillScanner({ members, settings, onAddItems }) {
     }
     return messages;
   }, [calculatedSubtotal, calculatedTotal, expectedTotal, receiptSubtotal]);
+  const billHistory = useMemo(() => {
+    const query = historySearch.trim().toLocaleLowerCase();
+    const localBills = transactions
+      .filter((transaction) => transaction.source === "expense-splitter")
+      .filter((transaction) => {
+        if (!query) return true;
+        const searchableText = [
+          transaction.name,
+          transaction.invoice?.storeName,
+          transaction.invoice?.invoiceNumber,
+          ...(Array.isArray(transaction.items)
+            ? transaction.items.map((item) => item.name)
+            : [])
+        ].filter(Boolean).join(" ").toLocaleLowerCase();
+        return searchableText.includes(query);
+      });
+    const seenIds = new Set(localBills.map((bill) => bill.id));
+    return [
+      ...localBills,
+      ...atlasBills.filter((bill) => !seenIds.has(bill.id))
+    ].sort((left, right) => new Date(right.date) - new Date(left.date));
+  }, [transactions, atlasBills, historySearch]);
+
+  function connectToAtlas(event) {
+    event.preventDefault();
+    const token = atlasTokenInput.trim();
+    if (!token) {
+      setAtlasError("Enter the server token configured by the administrator.");
+      return;
+    }
+    try {
+      saveAtlasToken(token);
+      setAtlasToken(token);
+      setAtlasStatus("Connecting to MongoDB Atlas...");
+      setAtlasError("");
+    } catch (tokenError) {
+      setAtlasError(tokenError.message);
+    }
+  }
 
   function resetReview() {
     setReviewItems([]);
@@ -96,6 +177,12 @@ export default function BillScanner({ members, settings, onAddItems }) {
     setDiscount("0");
     setAdditionalFees("0");
     setAcknowledgeMismatch(false);
+    setInvoice({
+      storeName: "",
+      invoiceNumber: "",
+      invoiceDate: "",
+      paymentMethod: ""
+    });
   }
 
   function chooseFile(event) {
@@ -153,7 +240,13 @@ export default function BillScanner({ members, settings, onAddItems }) {
       });
       const { data } = await worker.recognize(file, {}, { blocks: true, text: true });
       setRawText(data.text);
-      const { items, summary } = parseBillScan(data);
+      const { items, summary, invoice: scannedInvoice } = parseBillScan(data);
+      setInvoice({
+        storeName: scannedInvoice.storeName ?? "",
+        invoiceNumber: scannedInvoice.invoiceNumber ?? "",
+        invoiceDate: scannedInvoice.invoiceDate ?? "",
+        paymentMethod: scannedInvoice.paymentMethod ?? ""
+      });
 
       if (items.length === 0) {
         setReceiptSubtotal(summary.subtotal === null ? "" : String(summary.subtotal));
@@ -252,7 +345,10 @@ export default function BillScanner({ members, settings, onAddItems }) {
       {
         discount: moneyInBase(discount),
         additionalFees: moneyInBase(additionalFees)
-      }
+      },
+      Object.fromEntries(
+        Object.entries(invoice).map(([key, value]) => [key, value.trim() || null])
+      )
     );
     if (added === false) return;
     resetReview();
@@ -330,6 +426,29 @@ export default function BillScanner({ members, settings, onAddItems }) {
             >
               <Trash2 size={14} /> Discard scan
             </button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-2">
+            <TextField
+              label="Store name"
+              value={invoice.storeName}
+              onChange={(value) => setInvoice((current) => ({ ...current, storeName: value }))}
+            />
+            <TextField
+              label="Invoice number"
+              value={invoice.invoiceNumber}
+              onChange={(value) => setInvoice((current) => ({ ...current, invoiceNumber: value }))}
+            />
+            <TextField
+              label="Invoice date"
+              value={invoice.invoiceDate}
+              onChange={(value) => setInvoice((current) => ({ ...current, invoiceDate: value }))}
+            />
+            <TextField
+              label="Payment method"
+              value={invoice.paymentMethod}
+              onChange={(value) => setInvoice((current) => ({ ...current, paymentMethod: value }))}
+            />
           </div>
 
           <div className="grid grid-cols-1 gap-3 rounded-xl bg-slate-50 p-3 sm:grid-cols-3">
@@ -514,6 +633,110 @@ export default function BillScanner({ members, settings, onAddItems }) {
           <pre className="mt-3 max-h-48 overflow-auto whitespace-pre-wrap break-words text-xs text-slate-600">{rawText}</pre>
         </details>
       )}
+
+      <section className="space-y-3 border-t border-slate-100 pt-4">
+        <div>
+          <h3 className="font-semibold text-slate-800">Bill History</h3>
+          <p className="mt-1 text-xs text-slate-500">
+            Search confirmed grocery purchases by store, invoice number, or item.
+          </p>
+        </div>
+        <form onSubmit={connectToAtlas} className="space-y-2 rounded-xl bg-slate-50 p-3">
+          <label className="block text-xs font-medium text-slate-600" htmlFor="atlas-api-token">
+            MongoDB Atlas server token
+          </label>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input
+              id="atlas-api-token"
+              type="password"
+              autoComplete="current-password"
+              value={atlasTokenInput}
+              onChange={(event) => setAtlasTokenInput(event.target.value)}
+              placeholder="Enter token from the app administrator"
+              className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+            />
+            <button
+              type="submit"
+              className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
+            >
+              Connect Atlas
+            </button>
+            {atlasToken && (
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    clearAtlasToken();
+                    setAtlasToken("");
+                    setAtlasTokenInput("");
+                    setAtlasBills([]);
+                    setAtlasStatus("Atlas is disconnected. Bill entries will be saved in this browser only.");
+                    setAtlasError("");
+                  } catch (tokenError) {
+                    setAtlasError(tokenError.message);
+                  }
+                }}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700"
+              >
+                Disconnect
+              </button>
+            )}
+          </div>
+          <p role={atlasError ? "alert" : "status"} className={atlasError ? "text-xs text-red-700" : "text-xs text-slate-500"}>
+            {atlasError || atlasStatus}
+          </p>
+        </form>
+        <label className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5">
+          <Search size={17} className="shrink-0 text-slate-400" />
+          <input
+            type="search"
+            value={historySearch}
+            onChange={(event) => setHistorySearch(event.target.value)}
+            placeholder="Search bills, stores, invoice numbers, or items"
+            aria-label="Search bill history"
+            className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+          />
+        </label>
+        <p className="text-xs text-slate-500">
+          {billHistory.length} bill{billHistory.length === 1 ? "" : "s"} found
+        </p>
+        {billHistory.length > 0 ? (
+          <div className="space-y-2">
+            {billHistory.map((transaction) => (
+              <details key={transaction.id} className="rounded-xl border border-slate-200 p-3">
+                <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 text-sm">
+                  <span className="font-medium text-slate-800">
+                    {transaction.invoice?.storeName || transaction.name}
+                    {transaction.invoice?.invoiceNumber && (
+                      <span className="ml-2 text-xs font-normal text-slate-500">
+                        Invoice {transaction.invoice.invoiceNumber}
+                      </span>
+                    )}
+                  </span>
+                  <span className="font-semibold text-slate-800">
+                    {formatINR(Number(transaction.amount))}
+                  </span>
+                </summary>
+                <div className="mt-3 space-y-1 border-t border-slate-100 pt-3 text-xs text-slate-600">
+                  <p>Date: {transaction.invoice?.invoiceDate || formatTransactionDate(transaction.date)}</p>
+                  {transaction.invoice?.paymentMethod && <p>Payment: {transaction.invoice.paymentMethod}</p>}
+                  <p>{transaction.items?.length ?? 0} items</p>
+                  {transaction.items?.map((item, index) => (
+                    <p key={`${transaction.id}-${index}`} className="flex justify-between gap-3">
+                      <span>{item.name} × {item.quantity}</span>
+                      <span>{formatINR(Number(item.total ?? item.unitPrice * item.quantity))}</span>
+                    </p>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-xl bg-slate-50 p-4 text-center text-sm text-slate-500">
+            {historySearch ? "No bills match your search." : "Confirmed scanned bills will appear here."}
+          </p>
+        )}
+      </section>
     </section>
   );
 }
@@ -550,4 +773,22 @@ function MoneyField({ label, value, settings, onChange }) {
       />
     </label>
   );
+}
+
+function TextField({ label, value, onChange }) {
+  return (
+    <label className="min-w-0 text-xs text-slate-500">
+      {label}
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-1 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
+      />
+    </label>
+  );
+}
+
+function formatTransactionDate(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Unknown" : date.toLocaleDateString();
 }

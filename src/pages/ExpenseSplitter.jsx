@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { calculateExpenseSplit } from "../services/expenseService";
+import { getSavedAtlasToken, saveBillToAtlas } from "../services/billsApi";
 import BillScanner from "../components/BillScanner";
 
 const initialMembers = [
@@ -86,7 +87,8 @@ function loadExpenseData() {
         Object.fromEntries(
           Object.entries(item).filter(([key]) => key !== "weights")
         )
-      )
+      ),
+      invoiceDetails: data.invoiceDetails ?? null
     };
   } catch (error) {
     console.error("Unable to load CartSync expense data:", error);
@@ -103,6 +105,9 @@ export default function ExpenseSplitter() {
   );
   const [items, setItems] = useState(
     () => savedData?.items ?? initialItems
+  );
+  const [invoiceDetails, setInvoiceDetails] = useState(
+    () => savedData?.invoiceDetails ?? null
   );
 
   const [memberName, setMemberName] = useState("");
@@ -136,14 +141,15 @@ export default function ExpenseSplitter() {
           members,
           items,
           discount,
-          additionalFees
+          additionalFees,
+          invoiceDetails
         })
       );
     } catch (storageError) {
       console.error("Unable to save CartSync expense data:", storageError);
       setError("Unable to save data in this browser. Check browser storage settings.");
     }
-  }, [members, items, discount, additionalFees]);
+  }, [members, items, discount, additionalFees, invoiceDetails]);
 
   // Calculate the expense split
   const result = useMemo(() => {
@@ -195,7 +201,7 @@ export default function ExpenseSplitter() {
     setError("");
   };
 
-  const addScannedItems = (scannedItems, adjustments) => {
+  const addScannedItems = (scannedItems, adjustments, invoice) => {
     if (
       items.length > 0 &&
       !window.confirm("Replace the current cart with the reviewed scanned bill?")
@@ -211,6 +217,7 @@ export default function ExpenseSplitter() {
     setItems(newItems);
     setDiscount(String(adjustments.discount));
     setAdditionalFees(String(adjustments.additionalFees));
+    setInvoiceDetails(invoice);
     setError("");
     setSuccess(`${newItems.length} reviewed bill items added to the split.`);
     return true;
@@ -267,6 +274,7 @@ export default function ExpenseSplitter() {
         consumers: [defaultConsumer]
       }
     ]);
+    setInvoiceDetails(null);
 
     setItemName("");
     setItemPrice("");
@@ -320,12 +328,13 @@ export default function ExpenseSplitter() {
     setItems([]);
     setDiscount("0");
     setAdditionalFees("0");
+    setInvoiceDetails(null);
     setError("");
     setSuccess("");
   };
 
   // Record the bill as an actual purchase in the shared spending ledger.
-  const completePurchase = () => {
+  const completePurchase = async () => {
     if (!split || items.length === 0) {
       setError("Add at least one valid grocery item before confirming a purchase.");
       setSuccess("");
@@ -344,18 +353,24 @@ export default function ExpenseSplitter() {
       return;
     }
 
+    const atlasToken = getSavedAtlasToken();
     const confirmed = window.confirm(
-      `Confirm this grocery purchase for ${money(split.grandTotal)}? It will be added to Budget Management.`
+      atlasToken
+        ? `Confirm this grocery purchase for ${money(split.grandTotal)}? It will be added to Budget Management and synced to MongoDB Atlas.`
+        : `MongoDB Atlas is not connected. Save this ${money(split.grandTotal)} purchase only in this browser? Connect Atlas in Bill History to enable cloud sync.`
     );
 
     if (!confirmed) return;
 
-    try {
-      addTransaction({
+    let atlasSaved = false;
+    const transactionId = crypto.randomUUID();
+    const purchase = {
         name: `Grocery purchase (${items.length} items)`,
         amount: split.grandTotal,
         category: "Groceries",
         source: "expense-splitter",
+        id: transactionId,
+        invoice: invoiceDetails,
         items: items.map((item) => ({
           name: item.name,
           quantity: item.quantity,
@@ -368,17 +383,47 @@ export default function ExpenseSplitter() {
           memberName: member.name,
           amount: member.amount,
         })),
-      });
+      };
+
+    if (atlasToken) {
+      try {
+        await saveBillToAtlas(atlasToken, purchase);
+        atlasSaved = true;
+      } catch (syncError) {
+        if (syncError.status === 409) {
+          setError(`${syncError.message}${syncError.existingBill?.invoice?.invoiceNumber
+            ? ` Existing invoice: ${syncError.existingBill.invoice.invoiceNumber}.`
+            : ""}`);
+          setSuccess("");
+          return;
+        }
+        console.error("Could not sync grocery purchase to Atlas:", syncError);
+      }
+    }
+
+    try {
+      addTransaction(purchase);
 
       setItems([]);
       setDiscount("0");
       setAdditionalFees("0");
+      setInvoiceDetails(null);
       setError("");
       setSuccess(
-        `Purchase recorded successfully: ${money(split.grandTotal)}. Budget Management will update automatically.`
+        `Purchase recorded: ${money(split.grandTotal)}. Budget Management will update automatically.${
+          atlasSaved
+            ? " It was also saved to MongoDB Atlas."
+            : atlasToken
+              ? " Atlas sync failed; the purchase is saved only in this browser."
+              : " It is saved only in this browser."
+        }`
       );
     } catch (purchaseError) {
-      setError(purchaseError.message || "Unable to record this purchase.");
+      setError(
+        atlasSaved
+          ? `The bill was saved to MongoDB Atlas, but could not be saved to this browser: ${purchaseError.message}`
+          : purchaseError.message || "Unable to record this purchase."
+      );
       setSuccess("");
     }
   };

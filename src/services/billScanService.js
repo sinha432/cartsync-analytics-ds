@@ -226,10 +226,39 @@ function parseSummary(lines) {
   return { summary, discountFound };
 }
 
+function parseInvoiceDetails(lines) {
+  const textLines = lines.map(textOf).filter(Boolean);
+  const allText = textLines.join("\n");
+  const invoiceNumber = allText.match(
+    /\binvoice\s*(?:no\.?|number|#)\s*[:#.-]?\s*([A-Z0-9][A-Z0-9/-]*)/i
+  )?.[1] ?? null;
+  const dateLine = textLines.find((line) => /\bdate\b/i.test(line));
+  const dateText = dateLine?.match(
+    /\b(\d{1,2}[-/ ](?:[A-Z]{3,9}|\d{1,2})[-/ ]\d{2,4})\b/i
+  )?.[1] ?? textLines.map((line) =>
+    line.match(/\b(\d{1,2}[-/ ](?:[A-Z]{3,9}|\d{1,2})[-/ ]\d{2,4})\b/i)?.[1]
+  ).find(Boolean) ?? null;
+  const paymentLine = textLines.find((line) => /\bpayment\s*(?:mode|method)\b/i.test(line));
+  const paymentMatch = paymentLine?.match(
+    /\b(?:UPI|UP[!|1Il](?=$|[\s:.,])|cash\b|credit\s*card\b|debit\s*card\b|card\b|net\s*banking\b)/i
+  )?.[0] ?? null;
+  const paymentMethod = paymentMatch?.toUpperCase().startsWith("UP") ? "UPI" : paymentMatch;
+  const storeLine = textLines.slice(0, 10).find((line) =>
+    /\b(?:hypermarket|supermarket|grocery|groceries|retail|mart|market)\b/i.test(line) &&
+    !/\b(?:mall|address|website)\b/i.test(line)
+  ) ?? null;
+  const storeName = storeLine && !/^[^a-z0-9]*[a-z]{1,3}\s+[A-Z]{4,}\s+(?:hypermarket|supermarket)\b/i.test(storeLine)
+    ? storeLine
+    : null;
+
+  return { storeName, invoiceNumber, invoiceDate: dateText, paymentMethod };
+}
+
 export function parseBillScan(ocrData) {
   const lines = flattenOcrLines(ocrData);
   const header = headerColumns(lines);
   const { summary, discountFound } = parseSummary(lines);
+  const invoice = parseInvoiceDetails(lines);
   const rowLines = header
     ? lines.slice(lines.indexOf(header.header) + 1).filter((line) => {
       const text = textOf(line);
@@ -273,7 +302,7 @@ export function parseBillScan(ocrData) {
     }
   }
 
-  return { items, summary };
+  return { items, summary, invoice };
 }
 
 function moneyDifference(left, right) {
