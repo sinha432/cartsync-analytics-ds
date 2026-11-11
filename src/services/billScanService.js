@@ -41,10 +41,23 @@ function wordNumber(word) {
   return match ? readMoney(match[0]) : null;
 }
 
+function wordQuantity(word) {
+  const text = String(word?.text ?? "").trim();
+  const normalized = text
+    .replace(/^[iIl|!]([})\]]|q)?$/i, "1")
+    .replace(/^(\d+)[})\]]$/, "$1");
+  const quantity = Number(normalized);
+  return Number.isInteger(quantity) && quantity > 0 && quantity <= 10000
+    ? quantity
+    : null;
+}
+
 function headerColumns(lines) {
   const header = lines.find((line) => {
     const text = textOf(line).toLowerCase();
-    return /item\s+description/.test(text) && /\b(?:qty|quantity)\b/.test(text) && /\bprice\b/.test(text);
+    return /item\s+description/.test(text) &&
+      /\b(?:qty|quantity)\b/.test(text) &&
+      /\b(?:price|rate|amount)\b/.test(text);
   });
   if (!header || !Array.isArray(header.words) || header.words.length === 0) return null;
 
@@ -52,6 +65,7 @@ function headerColumns(lines) {
     const word = header.words.find((candidate) => pattern.test(String(candidate.text ?? "")));
     return wordCenter(word);
   };
+  const hsnWord = header.words.find((word) => /^hsn$/i.test(String(word.text ?? "")));
   const descriptionEnd = Math.max(
     ...header.words
       .filter((word) => /description/i.test(String(word.text ?? "")))
@@ -60,9 +74,11 @@ function headerColumns(lines) {
   const columns = {
     descriptionEnd,
     quantity: centerMatching(/^(?:qty|quantity|qly)$/i),
-    mrp: centerMatching(/^mrp$/i),
-    discount: centerMatching(/^(?:disc|discount)$/i),
-    price: centerMatching(/^price$/i)
+    hsn: centerMatching(/^hsn$/i),
+    hsnStart: Number.isFinite(hsnWord?.bbox?.x0) ? hsnWord.bbox.x0 : null,
+    rate: centerMatching(/^(?:rate|mrp)\b/i),
+    discount: centerMatching(/^(?:disc|discount)\b/i),
+    price: centerMatching(/^(?:price|amount)\b/i)
   };
 
   return Number.isFinite(columns.descriptionEnd) &&
@@ -83,17 +99,22 @@ function parseRowByColumns(line, columns) {
   );
   if (!serialWord) return null;
 
-  const quantityStart = (columns.descriptionEnd + columns.quantity) / 2;
-  const mrpStart = Number.isFinite(columns.mrp) ? (columns.quantity + columns.mrp) / 2 : columns.quantity + 18;
+  const quantityStart = Number.isFinite(columns.hsn)
+    ? (columns.hsn + columns.quantity) / 2
+    : (columns.descriptionEnd + columns.quantity) / 2;
+  const nextNumberColumn = Number.isFinite(columns.rate)
+    ? columns.rate
+    : columns.price;
+  const quantityEnd = (columns.quantity + nextNumberColumn) / 2;
   const priceStart = Number.isFinite(columns.discount)
     ? (columns.discount + columns.price) / 2
     : (columns.quantity + columns.price) / 2;
   const quantityWord = words
     .filter((word) => {
       const center = wordCenter(word);
-      return center !== null && center >= quantityStart && center < mrpStart;
+      return center !== null && center >= quantityStart && center < quantityEnd;
     })
-    .find((word) => wordNumber(word) !== null);
+    .find((word) => wordQuantity(word) !== null);
   const priceWord = words
     .filter((word) => {
       const center = wordCenter(word);
@@ -101,16 +122,19 @@ function parseRowByColumns(line, columns) {
     })
     .reverse()
     .find((word) => wordNumber(word) !== null);
-  const quantity = quantityWord ? wordNumber(quantityWord) : null;
+  const quantity = quantityWord ? wordQuantity(quantityWord) : null;
   const lineTotal = priceWord ? wordNumber(priceWord) : null;
   if (!quantity || !Number.isInteger(quantity) || quantity > 10000 || !lineTotal || lineTotal <= 0) return null;
 
+  const descriptionEnd = Number.isFinite(columns.hsnStart)
+    ? columns.hsnStart
+    : quantityStart;
   const name = words
     .filter((word) => {
       const center = wordCenter(word);
       return center !== null &&
         center > (serialWord.bbox?.x1 ?? 0) &&
-        center < quantityStart;
+        center < descriptionEnd;
     })
     .map((word) => word.text)
     .join(" ")
@@ -126,6 +150,21 @@ function parsePlainRow(line) {
   if (!serial || SUMMARY_LINE.test(text)) return null;
 
   const remainder = serial[2].trim();
+  const taxInvoiceColumns = remainder.match(
+    /^(.*?)\s+\d{3,8}\s+([0-9OoIi|!}qQ]{1,4})\s+[\d,]+(?:\.\d{1,2})?\s+[\d,]+(?:\.\d{1,2})?\s+[-‐‑–—]*([\d,]+(?:\.\d{1,2})?)\s*$/
+  );
+  if (taxInvoiceColumns) {
+    const name = taxInvoiceColumns[1].trim();
+    const quantityText = taxInvoiceColumns[2]
+      .replace(/^[iIl|!]([})\]]|q)?$/i, "1")
+      .replace(/^(\d+)[})\]]$/, "$1");
+    const quantity = Number(quantityText);
+    const lineTotal = readMoney(taxInvoiceColumns[3]);
+    if (name.length >= 2 && Number.isInteger(quantity) && quantity > 0 && quantity <= 10000 && lineTotal > 0) {
+      return { name, quantity, lineTotal };
+    }
+  }
+
   const fourColumns = remainder.match(
     /^(.*?)\s+(\d{1,4})\s+[\d,]+(?:\.\d{1,2})?\s+[\d,]+(?:\.\d{1,2})?\s+[-‐‑–—]*([\d,]+(?:\.\d{1,2})?)\s*$/
   );
@@ -155,6 +194,7 @@ function parseSummary(lines) {
   };
   let taxFound = false;
   let extraFeeFound = false;
+  let discountFound = false;
 
   for (const line of lines) {
     const text = textOf(line);
@@ -170,6 +210,7 @@ function parseSummary(lines) {
       summary.taxableAmount = amount;
     } else if (/\b(?:total\s+)?discount\b|\byou\s+saved\b/i.test(text)) {
       summary.discount = amount;
+      discountFound = true;
     } else if (/\b(?:cgst|sgst|igst|gst|tax)\b/i.test(text)) {
       summary.additionalFees += amount;
       taxFound = true;
@@ -182,13 +223,13 @@ function parseSummary(lines) {
   if (!taxFound && !extraFeeFound) summary.additionalFees = 0;
   summary.discount = Math.round(summary.discount * 100) / 100;
   summary.additionalFees = Math.round(summary.additionalFees * 100) / 100;
-  return summary;
+  return { summary, discountFound };
 }
 
 export function parseBillScan(ocrData) {
   const lines = flattenOcrLines(ocrData);
   const header = headerColumns(lines);
-  const summary = parseSummary(lines);
+  const { summary, discountFound } = parseSummary(lines);
   const rowLines = header
     ? lines.slice(lines.indexOf(header.header) + 1).filter((line) => {
       const text = textOf(line);
@@ -215,19 +256,21 @@ export function parseBillScan(ocrData) {
     });
   }
 
-  if (summary.subtotal !== null && summary.taxableAmount !== null) {
+  if (summary.subtotal !== null && summary.taxableAmount !== null && !discountFound) {
     const derivedDiscount = moneyDifference(summary.subtotal, summary.taxableAmount);
     if (derivedDiscount !== null) summary.discount = derivedDiscount;
   }
-  if (summary.taxableAmount !== null && summary.expectedTotal !== null) {
-    const derivedFees = moneyDifference(summary.expectedTotal, summary.taxableAmount);
-    if (derivedFees !== null) summary.additionalFees = derivedFees;
-  } else if (summary.subtotal !== null && summary.expectedTotal !== null) {
-    const derivedFees = moneyDifference(
-      summary.expectedTotal,
-      summary.subtotal - summary.discount
-    );
-    if (derivedFees !== null) summary.additionalFees = derivedFees;
+  if (summary.expectedTotal !== null) {
+    const netSubtotal = summary.subtotal === null
+      ? summary.taxableAmount
+      : moneyDifference(summary.subtotal, summary.discount);
+    const feeBasis = summary.subtotal !== null && netSubtotal !== null
+      ? netSubtotal
+      : summary.taxableAmount;
+    if (feeBasis !== null) {
+      const derivedFees = moneyDifference(summary.expectedTotal, feeBasis);
+      if (derivedFees !== null) summary.additionalFees = derivedFees;
+    }
   }
 
   return { items, summary };

@@ -3,6 +3,7 @@ import { createWorker } from "tesseract.js";
 import { AlertTriangle, Camera, CheckCircle2, FileText, ScanLine, Trash2 } from "lucide-react";
 import { fromBaseCurrency, toBaseCurrency } from "../services/appLocale";
 import { parseBillScan } from "../services/billScanService";
+import { calculateExpenseSplit } from "../services/expenseService";
 
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 const moneyInBase = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
@@ -42,6 +43,36 @@ export default function BillScanner({ members, settings, onAddItems }) {
     if (!isValidAmount(discount) || !isValidAmount(additionalFees)) return null;
     return moneyInBase(calculatedSubtotal - Number(discount) + Number(additionalFees));
   }, [calculatedSubtotal, discount, additionalFees]);
+  const splitPreview = useMemo(() => {
+    if (selectedItems.length === 0) return { data: null, error: "" };
+    if (!isValidAmount(discount) || !isValidAmount(additionalFees)) {
+      return {
+        data: null,
+        error: "Enter valid non-negative discount and tax/fee amounts to preview the split."
+      };
+    }
+
+    try {
+      return {
+        data: calculateExpenseSplit({
+          members,
+          items: selectedItems.map((item) => ({
+            id: item.id,
+            name: item.name,
+            quantity: Number(item.quantity),
+            price: Number(item.price),
+            lineTotal: item.lineTotal,
+            consumers: item.consumers
+          })),
+          discount: Number(discount),
+          additionalFees: Number(additionalFees)
+        }),
+        error: ""
+      };
+    } catch (previewError) {
+      return { data: null, error: previewError.message };
+    }
+  }, [selectedItems, members, discount, additionalFees]);
 
   const issues = useMemo(() => {
     const messages = [];
@@ -288,6 +319,9 @@ export default function BillScanner({ members, settings, onAddItems }) {
               <p className="mt-1 text-xs text-slate-500">
                 Receipt row prices are treated as line totals; edit unit price or quantity if needed. Adding this bill replaces the current cart.
               </p>
+              <p className="mt-1 text-xs text-slate-500">
+                Choose who shares each item below. Each item is split equally among its selected people; all household members start selected.
+              </p>
             </div>
             <button
               type="button"
@@ -407,7 +441,7 @@ export default function BillScanner({ members, settings, onAddItems }) {
               </div>
               <div className="grid grid-cols-1 gap-2 text-xs text-slate-500 sm:grid-cols-[1fr_auto] sm:items-center">
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                  <span className="font-medium">Split equally with:</span>
+                  <span className="font-medium">Share equally with ({item.consumers.length} selected):</span>
                   {members.map((member) => (
                     <label key={member.id} className="inline-flex items-center gap-1.5">
                       <input
@@ -428,6 +462,38 @@ export default function BillScanner({ members, settings, onAddItems }) {
               </div>
             </article>
           ))}
+
+          <section
+            aria-live="polite"
+            className="rounded-xl border border-teal-200 bg-teal-50 p-4"
+          >
+            <h4 className="font-semibold text-teal-950">Estimated split before adding items</h4>
+            <p className="mt-1 text-xs text-teal-800">
+              Shares update as you edit item details, select people, or change discounts and fees.
+            </p>
+            {splitPreview.data ? (
+              <>
+                <p className="mt-3 flex justify-between gap-3 border-b border-teal-200 pb-2 text-sm font-semibold text-teal-950">
+                  <span>Bill total</span>
+                  <span>{formatINR(splitPreview.data.grandTotal)}</span>
+                </p>
+                <ul className="mt-2 space-y-2">
+                  {splitPreview.data.memberTotals.map((member) => (
+                    <li key={member.id} className="flex justify-between gap-3 text-sm text-teal-950">
+                      <span>{member.name}</span>
+                      <span className="font-semibold">{formatINR(member.amount)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p className="mt-3 text-sm text-amber-900" role="status">
+                {splitPreview.error
+                  ? `Unable to preview split: ${splitPreview.error}`
+                  : "Select at least one recognized item to preview the split."}
+              </p>
+            )}
+          </section>
 
           <button
             type="button"
