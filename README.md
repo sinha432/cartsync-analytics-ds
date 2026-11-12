@@ -19,26 +19,22 @@ The JioMart scrape contains some price/pack entries without a matching product t
 
 ## Bill scanning
 
-Bill images are recognized in the browser with Tesseract.js and are not sent to an OCR service. The browser may download OCR worker and language resources. Review and edit item rows, quantities, prices, discounts, taxes/fees, and the receipt total before adding them. Receipt line totals are converted to unit prices, and the scanner flags totals that do not reconcile. Adding a reviewed bill replaces the current cart. Each item is split equally among its selected participants; there are no consumption-weight settings.
+Bill images are recognized in the browser with Tesseract.js and are not sent to an OCR service. The browser may download OCR worker and language resources. Review and edit item rows, quantities, prices, discounts, taxes/fees, and the receipt total before adding them. Receipt line totals are converted to unit prices, and the scanner flags totals that do not reconcile. Tax and fees are taken only from explicitly recognized receipt lines; the scanner does not invent a fee to force the total to match. When explicit discounts, fees, and total prove that OCR missed a leading digit in the subtotal, the subtotal is derived from those values. Mismatches remain available in a collapsed review panel and must be corrected or acknowledged before adding. Adding a reviewed bill replaces the current cart. Each item is split equally among its selected participants; there are no consumption-weight settings.
 
-## MongoDB Atlas bill storage
+## Local MongoDB bill storage
 
-The optional Vercel serverless API stores confirmed grocery bills in Atlas while retaining the existing browser ledger for immediate Budget Management updates. It also provides searchable bill history and rejects duplicate invoices when store name, invoice number, date, and total are all available. The API requires a shared administrator token; users enter it in the Bill History panel, where it is held in the current browser session only. This is not per-user authentication—use an identity provider before exposing private bill data to a broad public audience.
+The Vercel development API stores confirmed grocery bills in the local MongoDB database `cartsync`, collection `bills`, and provides searchable bill history. Budget Management continues to use the browser ledger for immediate updates. The API is intentionally available only from a non-production local development server connected to a MongoDB instance on localhost; it does not expose unauthenticated bill access to a production deployment.
 
-### Configure Atlas locally
+### Configure local MongoDB
 
-1. Create an Atlas database user with read/write access only to the CartSync database. Add the development machine's IP to the Atlas network access list; avoid opening access to all IPs unless required.
-2. Copy `.env.example` to `.env.local` and set `MONGODB_URI`, `MONGODB_DB`, and a long random `CARTSYNC_API_TOKEN`. Keep `.env.local` private; it is ignored by Git.
-3. Run the Vercel development server so the Vite app and `/api/bills` function run together:
+1. Install and start MongoDB Community locally. On the Homebrew setup used for this project, start it with `mongod --config /opt/homebrew/etc/mongod.conf --setParameter diagnosticDataCollectionEnabled=false --fork`; its configured data directory is `/opt/homebrew/var/mongodb`. Disabling the diagnostic collector avoids a local metrics-file crash seen in this environment. The default URI is `mongodb://localhost:27017`.
+2. Copy `.env.example` to `.env.local` if needed. Set `MONGODB_URI=mongodb://localhost:27017` and `MONGODB_DB=cartsync`. Keep `.env.local` private; it is ignored by Git.
+3. Run the Vite development server; it serves `/api/bills` locally as well:
 
    ```sh
-   npx vercel dev
+   npm run dev
    ```
 
-4. Open the local URL printed by Vercel, then enter the same API token in the Bill History panel.
+4. Open the local URL printed by Vite. Bill History connects automatically; existing confirmed bills in the browser spending ledger are copied to MongoDB when the local database is available. The browser ledger remains in place for Budget Management.
 
-### Configure Vercel
-
-Set `MONGODB_URI`, `MONGODB_DB`, and `CARTSYNC_API_TOKEN` as encrypted environment variables in the Vercel project's Development, Preview, and Production environments as appropriate. Redeploy after changing variables. Do not use a `VITE_` prefix for secrets. The browser's `npm run dev` server alone does not run Vercel API functions.
-
-The serverless API reuses one MongoDB client per warm function instance and uses a small pool (`maxPoolSize: 5`, `maxIdleTimeMS: 30s`) assuming low-volume, bursty Vercel usage. Leave Atlas connection and creation metrics enabled; investigate sustained pool wait queues, repeated connection creation, or `connections.current` approaching the cluster's limit before changing pool settings.
+Alternatively, `npx vercel dev` can serve the app and API together. A deployed Vercel app cannot connect to your computer's localhost; this local database setup is for local development. Existing browser-ledger data is not automatically migrated into MongoDB.

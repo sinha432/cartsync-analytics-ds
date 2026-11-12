@@ -1,4 +1,3 @@
-import { timingSafeEqual } from "node:crypto";
 import { getMongoDatabase } from "./mongo.js";
 
 const COLLECTION_NAME = "bills";
@@ -10,17 +9,24 @@ function sendJson(response, status, body) {
   response.end(JSON.stringify(body));
 }
 
-function isAuthorized(request) {
-  const expectedToken = process.env.CARTSYNC_API_TOKEN;
-  const authorization = request.headers.authorization || "";
-  const suppliedToken = authorization.startsWith("Bearer ")
-    ? authorization.slice(7)
-    : "";
-  if (!expectedToken || !suppliedToken) return false;
+function isLocalMongoRequest(request) {
+  if (process.env.NODE_ENV === "production") return false;
 
-  const expected = Buffer.from(expectedToken);
-  const supplied = Buffer.from(suppliedToken);
-  return expected.length === supplied.length && timingSafeEqual(expected, supplied);
+  try {
+    const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+    const databaseHost = new URL(process.env.MONGODB_URI).hostname.replace(/^\[|\]$/g, "");
+    const requestHost = new URL(`http://${request.headers?.host}`).hostname.replace(/^\[|\]$/g, "");
+    const origin = request.headers?.origin;
+    const originHost = origin
+      ? new URL(origin).hostname.replace(/^\[|\]$/g, "")
+      : null;
+
+    return localHosts.has(databaseHost) &&
+      localHosts.has(requestHost) &&
+      (!originHost || localHosts.has(originHost));
+  } catch {
+    return false;
+  }
 }
 
 function cleanText(value, maxLength = 200) {
@@ -142,11 +148,10 @@ export default async function billsApi(request, response) {
     response.setHeader("Allow", "GET, POST");
     return sendJson(response, 405, { error: "Method not allowed." });
   }
-  if (!process.env.CARTSYNC_API_TOKEN) {
-    return sendJson(response, 503, { error: "Atlas bill storage is not configured." });
-  }
-  if (!isAuthorized(request)) {
-    return sendJson(response, 401, { error: "Enter the bill API token configured by the administrator." });
+  if (!isLocalMongoRequest(request)) {
+    return sendJson(response, 403, {
+      error: "Bill storage is available only from a local development server connected to localhost MongoDB."
+    });
   }
 
   let bill;
@@ -204,6 +209,8 @@ export default async function billsApi(request, response) {
     return sendJson(response, 201, { bill: toClientBill(bill), alreadySaved: false });
   } catch (error) {
     console.error("Bill API request failed:", error.message);
-    return sendJson(response, 500, { error: "Could not access Atlas bill storage. Check server configuration." });
+    return sendJson(response, 500, {
+      error: "Could not connect to local MongoDB. Make sure MongoDB is running and MONGODB_URI is correct."
+    });
   }
 }

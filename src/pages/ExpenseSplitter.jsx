@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 import { calculateExpenseSplit } from "../services/expenseService";
-import { getSavedAtlasToken, saveBillToAtlas } from "../services/billsApi";
+import { saveBillToMongoDB } from "../services/billsApi";
 import BillScanner from "../components/BillScanner";
 
 const initialMembers = [
@@ -353,52 +353,50 @@ export default function ExpenseSplitter() {
       return;
     }
 
-    const atlasToken = getSavedAtlasToken();
     const confirmed = window.confirm(
-      atlasToken
-        ? `Confirm this grocery purchase for ${money(split.grandTotal)}? It will be added to Budget Management and synced to MongoDB Atlas.`
-        : `MongoDB Atlas is not connected. Save this ${money(split.grandTotal)} purchase only in this browser? Connect Atlas in Bill History to enable cloud sync.`
+      `Confirm this grocery purchase for ${money(split.grandTotal)}? It will be saved to local MongoDB and added to Budget Management.`
     );
 
     if (!confirmed) return;
 
-    let atlasSaved = false;
+    let mongoSaved = false;
     const transactionId = crypto.randomUUID();
     const purchase = {
-        name: `Grocery purchase (${items.length} items)`,
-        amount: split.grandTotal,
-        category: "Groceries",
-        source: "expense-splitter",
-        id: transactionId,
-        invoice: invoiceDetails,
-        items: items.map((item) => ({
-          name: item.name,
-          quantity: item.quantity,
-          unitPrice: Number(item.price),
-          total: item.lineTotal ?? Number(item.price) * Number(item.quantity),
-          consumers: [...item.consumers],
-        })),
-        memberAllocations: split.memberTotals.map((member) => ({
-          memberId: member.id,
-          memberName: member.name,
-          amount: member.amount,
-        })),
-      };
+      name: `Grocery purchase (${items.length} items)`,
+      amount: split.grandTotal,
+      category: "Groceries",
+      source: "expense-splitter",
+      id: transactionId,
+      invoice: invoiceDetails,
+      items: items.map((item) => ({
+        name: item.name,
+        quantity: item.quantity,
+        unitPrice: Number(item.price),
+        total: item.lineTotal ?? Number(item.price) * Number(item.quantity),
+        consumers: [...item.consumers],
+      })),
+      memberAllocations: split.memberTotals.map((member) => ({
+        memberId: member.id,
+        memberName: member.name,
+        amount: member.amount,
+      })),
+    };
 
-    if (atlasToken) {
-      try {
-        await saveBillToAtlas(atlasToken, purchase);
-        atlasSaved = true;
-      } catch (syncError) {
-        if (syncError.status === 409) {
-          setError(`${syncError.message}${syncError.existingBill?.invoice?.invoiceNumber
-            ? ` Existing invoice: ${syncError.existingBill.invoice.invoiceNumber}.`
-            : ""}`);
-          setSuccess("");
-          return;
-        }
-        console.error("Could not sync grocery purchase to Atlas:", syncError);
+    try {
+      await saveBillToMongoDB(purchase);
+      mongoSaved = true;
+    } catch (saveError) {
+      if (saveError.status === 409) {
+        setError(`${saveError.message}${saveError.existingBill?.invoice?.invoiceNumber
+          ? ` Existing invoice: ${saveError.existingBill.invoice.invoiceNumber}.`
+          : ""}`);
+        setSuccess("");
+        return;
       }
+      console.error("Could not save grocery purchase to local MongoDB:", saveError);
+      setError(`Could not save this purchase to local MongoDB: ${saveError.message}`);
+      setSuccess("");
+      return;
     }
 
     try {
@@ -410,18 +408,12 @@ export default function ExpenseSplitter() {
       setInvoiceDetails(null);
       setError("");
       setSuccess(
-        `Purchase recorded: ${money(split.grandTotal)}. Budget Management will update automatically.${
-          atlasSaved
-            ? " It was also saved to MongoDB Atlas."
-            : atlasToken
-              ? " Atlas sync failed; the purchase is saved only in this browser."
-              : " It is saved only in this browser."
-        }`
+        `Purchase recorded: ${money(split.grandTotal)}. It was saved to local MongoDB, and Budget Management will update automatically.`
       );
     } catch (purchaseError) {
       setError(
-        atlasSaved
-          ? `The bill was saved to MongoDB Atlas, but could not be saved to this browser: ${purchaseError.message}`
+        mongoSaved
+          ? `The bill was saved to local MongoDB, but could not be added to this browser's Budget Management: ${purchaseError.message}`
           : purchaseError.message || "Unable to record this purchase."
       );
       setSuccess("");

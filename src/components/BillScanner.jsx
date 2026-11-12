@@ -5,12 +5,7 @@ import { fromBaseCurrency, toBaseCurrency } from "../services/appLocale";
 import { parseBillScan } from "../services/billScanService";
 import { calculateExpenseSplit } from "../services/expenseService";
 import { getTransactions, subscribeToLedger } from "../services/spendingLedger";
-import {
-  fetchAtlasBills,
-  clearAtlasToken,
-  getSavedAtlasToken,
-  saveAtlasToken
-} from "../services/billsApi";
+import { fetchMongoBills, saveBillToMongoDB } from "../services/billsApi";
 
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 const moneyInBase = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
@@ -21,7 +16,6 @@ function isValidAmount(value) {
 
 export default function BillScanner({ members, settings, onAddItems }) {
   const fileInput = useRef(null);
-  const initialAtlasToken = getSavedAtlasToken();
   const [file, setFile] = useState(null);
   const [reviewItems, setReviewItems] = useState([]);
   const [scanning, setScanning] = useState(false);
@@ -41,32 +35,55 @@ export default function BillScanner({ members, settings, onAddItems }) {
   });
   const [historySearch, setHistorySearch] = useState("");
   const [transactions, setTransactions] = useState(() => getTransactions());
-  const [atlasBills, setAtlasBills] = useState([]);
-  const [atlasTokenInput, setAtlasTokenInput] = useState(initialAtlasToken);
-  const [atlasToken, setAtlasToken] = useState(initialAtlasToken);
-  const [atlasStatus, setAtlasStatus] = useState(initialAtlasToken
-    ? "Connecting to MongoDB Atlas..."
-    : "Atlas is disconnected. Bill entries will be saved in this browser only.");
-  const [atlasError, setAtlasError] = useState("");
+  const [mongoBills, setMongoBills] = useState([]);
+  const [mongoStatus, setMongoStatus] = useState("Connecting to local MongoDB...");
+  const [mongoError, setMongoError] = useState("");
 
   useEffect(() => subscribeToLedger(setTransactions), []);
   useEffect(() => {
-    if (!atlasToken) return undefined;
-
     const controller = new AbortController();
-    fetchAtlasBills(atlasToken, historySearch, controller.signal)
-      .then((bills) => {
-        setAtlasBills(bills);
-        setAtlasStatus("Connected to MongoDB Atlas.");
-      })
-      .catch((requestError) => {
+    async function loadAndSyncBills() {
+      try {
+        const bills = await fetchMongoBills(historySearch, controller.signal);
+        const savedIds = new Set(bills.map((bill) => bill.id));
+        const browserBills = transactions.filter(
+          (transaction) =>
+            transaction.source === "expense-splitter" &&
+            !savedIds.has(transaction.id)
+        );
+        const syncErrors = [];
+
+        for (const transaction of browserBills) {
+          if (controller.signal.aborted) return;
+          try {
+            await saveBillToMongoDB(transaction);
+          } catch (syncError) {
+            syncErrors.push(syncError.message);
+          }
+        }
+
+        const updatedBills = browserBills.length > 0
+          ? await fetchMongoBills(historySearch, controller.signal)
+          : bills;
+        if (controller.signal.aborted) return;
+
+        setMongoBills(updatedBills);
+        setMongoStatus("Connected to local MongoDB.");
+        setMongoError(syncErrors.length > 0
+          ? `${syncErrors.length} browser bill${syncErrors.length === 1 ? "" : "s"} could not be copied to MongoDB: ${syncErrors[0]}`
+          : "");
+      } catch (requestError) {
         if (requestError.name === "AbortError") return;
-        setAtlasError(requestError.message);
-        setAtlasStatus("Could not load bills from MongoDB Atlas.");
-      });
+        if (controller.signal.aborted) return;
+        setMongoError(requestError.message);
+        setMongoStatus("Could not load bills from local MongoDB.");
+      }
+    }
+
+    loadAndSyncBills();
 
     return () => controller.abort();
-  }, [atlasToken, historySearch]);
+  }, [historySearch, transactions]);
 
   const selectedItems = useMemo(
     () => reviewItems.filter((item) => item.included),
@@ -149,26 +166,9 @@ export default function BillScanner({ members, settings, onAddItems }) {
     const seenIds = new Set(localBills.map((bill) => bill.id));
     return [
       ...localBills,
-      ...atlasBills.filter((bill) => !seenIds.has(bill.id))
+      ...mongoBills.filter((bill) => !seenIds.has(bill.id))
     ].sort((left, right) => new Date(right.date) - new Date(left.date));
-  }, [transactions, atlasBills, historySearch]);
-
-  function connectToAtlas(event) {
-    event.preventDefault();
-    const token = atlasTokenInput.trim();
-    if (!token) {
-      setAtlasError("Enter the server token configured by the administrator.");
-      return;
-    }
-    try {
-      saveAtlasToken(token);
-      setAtlasToken(token);
-      setAtlasStatus("Connecting to MongoDB Atlas...");
-      setAtlasError("");
-    } catch (tokenError) {
-      setAtlasError(tokenError.message);
-    }
-  }
+  }, [transactions, mongoBills, historySearch]);
 
   function resetReview() {
     setReviewItems([]);
@@ -234,13 +234,26 @@ export default function BillScanner({ members, settings, onAddItems }) {
         }
       });
 
-      await worker.setParameters({
-        tessedit_pageseg_mode: "6",
-        preserve_interword_spaces: "1"
-      });
-      const { data } = await worker.recognize(file, {}, { blocks: true, text: true });
+      let scanResult = null;
+      for (const pageSegMode of ["6", "11", "4"]) {
+        await worker.setParameters({
+          tessedit_pageseg_mode: pageSegMode,
+          preserve_interword_spaces: "1"
+        });
+        const { data } = await worker.recognize(file, {}, { blocks: true, text: true });
+        const parsed = parseBillScan(data);
+        if (!scanResult || parsed.items.length > scanResult.parsed.items.length) {
+          scanResult = { data, parsed };
+        }
+        if (parsed.items.length > 0) break;
+        if (pageSegMode !== "4") {
+          setProgress("No item rows found; retrying with alternate receipt layout recognition...");
+        }
+      }
+
+      const { data } = scanResult;
+      const { items, summary, invoice: scannedInvoice } = scanResult.parsed;
       setRawText(data.text);
-      const { items, summary, invoice: scannedInvoice } = parseBillScan(data);
       setInvoice({
         storeName: scannedInvoice.storeName ?? "",
         invoiceNumber: scannedInvoice.invoiceNumber ?? "",
@@ -326,8 +339,10 @@ export default function BillScanner({ members, settings, onAddItems }) {
       return;
     }
     if (issues.length > 0 && !acknowledgeMismatch) {
-      setError("Review the total mismatch and confirm below before adding these items.");
-      return;
+      const confirmed = window.confirm(
+        `Receipt totals do not match:\n\n${issues.map((issue) => `- ${issue}`).join("\n")}\n\nAdd the reviewed items anyway?`
+      );
+      if (!confirmed) return;
     }
     if (!isValidAmount(discount) || !isValidAmount(additionalFees)) {
       setError("Enter valid non-negative discount and tax/fee amounts.");
@@ -485,27 +500,29 @@ export default function BillScanner({ members, settings, onAddItems }) {
           </div>
 
           {issues.length > 0 ? (
-            <div className="space-y-3 rounded-xl border border-amber-300 bg-amber-50 p-3">
-              <div className="flex items-start gap-2 text-sm text-amber-950">
-                <AlertTriangle size={18} className="mt-0.5 shrink-0" />
+            <details className="rounded-xl border border-amber-300 bg-amber-50 p-3">
+              <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-amber-950">
+                <AlertTriangle size={18} className="shrink-0" />
+                Receipt totals need review ({issues.length})
+              </summary>
+              <div className="mt-3 space-y-3 text-sm text-amber-950">
                 <div>
-                  <p className="font-semibold">The scanned amounts do not match yet.</p>
                   <ul className="mt-1 list-inside list-disc">
                     {issues.map((issue) => <li key={issue}>{issue}</li>)}
                   </ul>
                   <p className="mt-1 text-xs">Correct the values or explicitly confirm that you reviewed the difference.</p>
                 </div>
+                <label className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={acknowledgeMismatch}
+                    onChange={(event) => setAcknowledgeMismatch(event.target.checked)}
+                    className="mt-0.5 accent-amber-700"
+                  />
+                  I reviewed the mismatch and still want to add these items.
+                </label>
               </div>
-              <label className="flex items-start gap-2 text-sm text-amber-950">
-                <input
-                  type="checkbox"
-                  checked={acknowledgeMismatch}
-                  onChange={(event) => setAcknowledgeMismatch(event.target.checked)}
-                  className="mt-0.5 accent-amber-700"
-                />
-                I reviewed the mismatch and still want to add these items.
-              </label>
-            </div>
+            </details>
           ) : (
             <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
               <CheckCircle2 size={17} /> Scanned subtotal and total reconcile.
@@ -617,7 +634,6 @@ export default function BillScanner({ members, settings, onAddItems }) {
           <button
             type="button"
             onClick={addReviewedItems}
-            disabled={issues.length > 0 && !acknowledgeMismatch}
             className="w-full rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Add {selectedItems.length} reviewed items to split
@@ -641,51 +657,12 @@ export default function BillScanner({ members, settings, onAddItems }) {
             Search confirmed grocery purchases by store, invoice number, or item.
           </p>
         </div>
-        <form onSubmit={connectToAtlas} className="space-y-2 rounded-xl bg-slate-50 p-3">
-          <label className="block text-xs font-medium text-slate-600" htmlFor="atlas-api-token">
-            MongoDB Atlas server token
-          </label>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <input
-              id="atlas-api-token"
-              type="password"
-              autoComplete="current-password"
-              value={atlasTokenInput}
-              onChange={(event) => setAtlasTokenInput(event.target.value)}
-              placeholder="Enter token from the app administrator"
-              className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-            />
-            <button
-              type="submit"
-              className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
-            >
-              Connect Atlas
-            </button>
-            {atlasToken && (
-              <button
-                type="button"
-                onClick={() => {
-                  try {
-                    clearAtlasToken();
-                    setAtlasToken("");
-                    setAtlasTokenInput("");
-                    setAtlasBills([]);
-                    setAtlasStatus("Atlas is disconnected. Bill entries will be saved in this browser only.");
-                    setAtlasError("");
-                  } catch (tokenError) {
-                    setAtlasError(tokenError.message);
-                  }
-                }}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700"
-              >
-                Disconnect
-              </button>
-            )}
-          </div>
-          <p role={atlasError ? "alert" : "status"} className={atlasError ? "text-xs text-red-700" : "text-xs text-slate-500"}>
-            {atlasError || atlasStatus}
-          </p>
-        </form>
+        <p
+          role={mongoError ? "alert" : "status"}
+          className={`rounded-xl bg-slate-50 p-3 text-xs ${mongoError ? "text-red-700" : "text-slate-500"}`}
+        >
+          {mongoError || mongoStatus}
+        </p>
         <label className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5">
           <Search size={17} className="shrink-0 text-slate-400" />
           <input

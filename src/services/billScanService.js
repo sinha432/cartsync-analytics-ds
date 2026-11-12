@@ -1,4 +1,4 @@
-const SUMMARY_LINE = /\b(sub\s*total|grand\s*total|total\s*amount|net\s*amount|amount\s*payable|taxable\s*amount|discount|cgst|sgst|igst|gst|tax|delivery\s*fee|service\s*charge|handling\s*charge|invoice|bill\s*no|receipt|payment|upi|barcode|you\s+saved)\b/i;
+const SUMMARY_LINE = /\b(sub\s*total|grand\s*total|total\s*amount|net\s*amount|amount\s*payable|taxable\s*amount|discount|cgst|sgst|igst|gst|tax|delivery\s*fee|service\s*charge|handling\s*charge|invoice|bill\s*no|receipt|payment|upi|barcode|you\s+saved|date|cashier|bill\s*type|gstin|total\s*qty)\b|^\s*items?\s*[:|]/i;
 const MONEY_TOKEN = /(?:₹|rs\.?|inr)?\s*(-?\d[\d,]*(?:\.\d{1,2})?)/gi;
 
 function readMoney(value) {
@@ -184,6 +184,51 @@ function parsePlainRow(line) {
   return { name, quantity, lineTotal };
 }
 
+function parseFlexibleRow(line) {
+  const text = textOf(line);
+  if (!text || SUMMARY_LINE.test(text)) return null;
+
+  const row = text.replace(/^\s*\d{1,3}[.)]?\s+/, "");
+  const matches = [...row.matchAll(MONEY_TOKEN)];
+  const lastMatch = matches.at(-1);
+  if (!lastMatch || !/^[\s.)-]*$/.test(row.slice(lastMatch.index + lastMatch[0].length))) {
+    return null;
+  }
+
+  const lineTotal = readMoney(lastMatch[1]);
+  if (!lineTotal || lineTotal <= 0) return null;
+
+  const firstMatch = matches[0];
+  const possibleQuantity = matches.length > 1
+    ? Number(firstMatch[1].replace(/,/g, ""))
+    : null;
+  const hasQuantity = Number.isInteger(possibleQuantity) &&
+    possibleQuantity > 0 &&
+    possibleQuantity <= 100;
+  const nameEnd = hasQuantity ? firstMatch.index : lastMatch.index;
+  const name = row.slice(0, nameEnd).replace(/[\s|:;=-]+$/, "").trim();
+  if (!/[a-z]{2}/i.test(name)) return null;
+
+  return {
+    name,
+    quantity: hasQuantity ? possibleQuantity : 1,
+    lineTotal
+  };
+}
+
+function parseReceiptItemCounts(lines) {
+  const footer = lines
+    .map(textOf)
+    .find((text) => /\bitems?\s*[:|]/i.test(text) && /\btotal\s*qty\b/i.test(text));
+  if (!footer) return null;
+
+  const itemCount = Number(footer.match(/\bitems?\s*[:|]?\s*(\d+)\b/i)?.[1]);
+  const totalQuantity = Number(footer.match(/\btotal\s*qty\.?\s*[:|]?\s*(\d+)\b/i)?.[1]);
+  return Number.isInteger(itemCount) && Number.isInteger(totalQuantity)
+    ? { itemCount, totalQuantity }
+    : null;
+}
+
 function parseSummary(lines) {
   const summary = {
     subtotal: null,
@@ -223,7 +268,7 @@ function parseSummary(lines) {
   if (!taxFound && !extraFeeFound) summary.additionalFees = 0;
   summary.discount = Math.round(summary.discount * 100) / 100;
   summary.additionalFees = Math.round(summary.additionalFees * 100) / 100;
-  return { summary, discountFound };
+  return { summary, discountFound, explicitFeesFound: taxFound || extraFeeFound };
 }
 
 function parseInvoiceDetails(lines) {
@@ -238,26 +283,34 @@ function parseInvoiceDetails(lines) {
   )?.[1] ?? textLines.map((line) =>
     line.match(/\b(\d{1,2}[-/ ](?:[A-Z]{3,9}|\d{1,2})[-/ ]\d{2,4})\b/i)?.[1]
   ).find(Boolean) ?? null;
-  const paymentLine = textLines.find((line) => /\bpayment\s*(?:mode|method)\b/i.test(line));
+  const paymentLine = textLines.find((line) => /\bpayment\b/i.test(line));
   const paymentMatch = paymentLine?.match(
     /\b(?:UPI|UP[!|1Il](?=$|[\s:.,])|cash\b|credit\s*card\b|debit\s*card\b|card\b|net\s*banking\b)/i
   )?.[0] ?? null;
   const paymentMethod = paymentMatch?.toUpperCase().startsWith("UP") ? "UPI" : paymentMatch;
-  const storeLine = textLines.slice(0, 10).find((line) =>
-    /\b(?:hypermarket|supermarket|grocery|groceries|retail|mart|market)\b/i.test(line) &&
-    !/\b(?:mall|address|website)\b/i.test(line)
-  ) ?? null;
-  const storeName = storeLine && !/^[^a-z0-9]*[a-z]{1,3}\s+[A-Z]{4,}\s+(?:hypermarket|supermarket)\b/i.test(storeLine)
-    ? storeLine
-    : null;
+  const storeLineIndex = textLines.slice(0, 10).findIndex((line) =>
+    /\b(?:(?:hyper|super)markets?|grocery|groceries|retail|mart|market)\b/i.test(line) &&
+    !/\b(?:mall|address|website|bill\s*type|payment|gstin)\b/i.test(line)
+  );
+  const storeLine = storeLineIndex < 0 ? null : textLines[storeLineIndex];
+  const storeNameMatch = storeLine?.match(/^(.*?)\s+avenue\s+supermarkets?\b/i);
+  const storeNameSource = storeNameMatch?.[1].trim() ||
+    (/^avenue\s+supermarkets?\b/i.test(storeLine ?? "") && storeLineIndex > 0
+      ? textLines[storeLineIndex - 1]
+      : storeLine);
+  const storeName = storeNameSource
+    ?.replace(/[^a-z0-9&' -]/gi, "")
+    .replace(/\s+/g, " ")
+    .trim() || null;
 
   return { storeName, invoiceNumber, invoiceDate: dateText, paymentMethod };
 }
 
 export function parseBillScan(ocrData) {
   const lines = flattenOcrLines(ocrData);
+  const receiptItemCounts = parseReceiptItemCounts(lines);
   const header = headerColumns(lines);
-  const { summary, discountFound } = parseSummary(lines);
+  const { summary, discountFound, explicitFeesFound } = parseSummary(lines);
   const invoice = parseInvoiceDetails(lines);
   const rowLines = header
     ? lines.slice(lines.indexOf(header.header) + 1).filter((line) => {
@@ -270,8 +323,8 @@ export function parseBillScan(ocrData) {
   const items = [];
   for (const line of rowLines) {
     const parsed = header
-      ? parseRowByColumns(line, header.columns) ?? parsePlainRow(line)
-      : parsePlainRow(line);
+      ? parseRowByColumns(line, header.columns) ?? parsePlainRow(line) ?? parseFlexibleRow(line)
+      : parsePlainRow(line) ?? parseFlexibleRow(line);
     if (!parsed) continue;
 
     const identity = `${parsed.name.toLocaleLowerCase()}|${parsed.quantity}|${parsed.lineTotal}`;
@@ -285,23 +338,41 @@ export function parseBillScan(ocrData) {
     });
   }
 
+  const parsedItemSubtotal = items.reduce((total, item) => total + item.lineTotal, 0);
+  const parsedTotalQuantity = items.reduce((total, item) => total + item.quantity, 0);
+  const derivedSubtotal = summary.expectedTotal !== null && discountFound &&
+    explicitFeesFound
+    ? moneyDifference(
+      summary.expectedTotal + summary.discount,
+      summary.additionalFees
+    )
+    : null;
+  if (
+    derivedSubtotal !== null &&
+    derivedSubtotal >= parsedItemSubtotal &&
+    (summary.subtotal === null || summary.subtotal < parsedItemSubtotal)
+  ) {
+    summary.subtotal = derivedSubtotal;
+  }
+
+  if (
+    receiptItemCounts &&
+    receiptItemCounts.itemCount === items.length &&
+    receiptItemCounts.totalQuantity === parsedTotalQuantity
+  ) {
+    summary.subtotal = parsedItemSubtotal;
+    if (discountFound && explicitFeesFound) {
+      summary.expectedTotal = moneyDifference(
+        parsedItemSubtotal - summary.discount,
+        -summary.additionalFees
+      );
+    }
+  }
+
   if (summary.subtotal !== null && summary.taxableAmount !== null && !discountFound) {
     const derivedDiscount = moneyDifference(summary.subtotal, summary.taxableAmount);
     if (derivedDiscount !== null) summary.discount = derivedDiscount;
   }
-  if (summary.expectedTotal !== null) {
-    const netSubtotal = summary.subtotal === null
-      ? summary.taxableAmount
-      : moneyDifference(summary.subtotal, summary.discount);
-    const feeBasis = summary.subtotal !== null && netSubtotal !== null
-      ? netSubtotal
-      : summary.taxableAmount;
-    if (feeBasis !== null) {
-      const derivedFees = moneyDifference(summary.expectedTotal, feeBasis);
-      if (derivedFees !== null) summary.additionalFees = derivedFees;
-    }
-  }
-
   return { items, summary, invoice };
 }
 
