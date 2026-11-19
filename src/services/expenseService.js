@@ -62,11 +62,29 @@ function allocateEvenly(totalCents, ids) {
   }));
 }
 
+function allocateAmount(totalCents, allocation, members, memberBases) {
+  if (totalCents === 0) return members.map((member) => ({ id: member.id, cents: 0 }));
+  if (allocation === "equal") {
+    return allocateEvenly(totalCents, members.map((member) => member.id));
+  }
+  if (allocation !== "proportional") {
+    throw new Error("Choose an equal or proportional allocation for tax and adjustments.");
+  }
+
+  const entries = members
+    .map((member) => ({ id: member.id, basis: memberBases[member.id] }))
+    .filter((entry) => entry.basis > 0);
+  return allocateProportionally(totalCents, entries);
+}
+
 export function calculateExpenseSplit({
   members,
   items,
   discount = 0,
-  additionalFees = 0
+  additionalFees = 0,
+  roundingAdjustment = 0,
+  feesAllocation = "proportional",
+  adjustmentAllocation = "proportional"
 }) {
   if (!Array.isArray(members) || !Array.isArray(items)) {
     throw new Error("Members and items must be arrays");
@@ -85,14 +103,21 @@ export function calculateExpenseSplit({
   // Convert discount and fees to paise
   const discountCents = Math.round(Number(discount) * 100);
   const feeCents = Math.round(Number(additionalFees) * 100);
+  const roundingAdjustmentCents = Math.round(Number(roundingAdjustment) * 100);
+
+  if (!["equal", "proportional"].includes(feesAllocation) ||
+      !["equal", "proportional"].includes(adjustmentAllocation)) {
+    throw new Error("Choose an equal or proportional allocation for tax and adjustments.");
+  }
 
   if (
     !Number.isSafeInteger(discountCents) ||
     !Number.isSafeInteger(feeCents) ||
+    !Number.isSafeInteger(roundingAdjustmentCents) ||
     discountCents < 0 ||
     feeCents < 0
   ) {
-    throw new Error("Invalid discount or additional fees");
+    throw new Error("Enter a valid discount, tax/fee, and receipt adjustment.");
   }
 
   // Handle empty cart
@@ -100,12 +125,16 @@ export function calculateExpenseSplit({
     if (discountCents > 0) {
       throw new Error("Discount cannot exceed the cart subtotal");
     }
+    if (feeCents > 0 || roundingAdjustmentCents !== 0) {
+      throw new Error("Add at least one priced item before applying bill adjustments.");
+    }
 
     return {
       subtotal: 0,
       discount: 0,
-      additionalFees: feeCents / 100,
-      grandTotal: feeCents / 100,
+      additionalFees: 0,
+      roundingAdjustment: 0,
+      grandTotal: 0,
       memberTotals: members.map((member) => ({
         id: member.id,
         name: member.name,
@@ -137,9 +166,11 @@ export function calculateExpenseSplit({
     if (
       (!hasLineTotal && (!Number.isSafeInteger(priceCents) || priceCents <= 0)) ||
       !Number.isSafeInteger(quantity) ||
-      quantity < 1
+      quantity < 1 ||
+      typeof item.name !== "string" ||
+      !item.name.trim()
     ) {
-      throw new Error("Invalid item price or quantity");
+      throw new Error("Each item needs a name, positive price, and whole-number quantity.");
     }
 
     const consumers = item.consumers || [];
@@ -158,7 +189,7 @@ export function calculateExpenseSplit({
       : priceCents * quantity;
 
     if (!Number.isSafeInteger(itemTotal) || itemTotal <= 0) {
-      throw new Error("Item total is too large");
+      throw new Error("Each item must have a positive, valid total amount.");
     }
 
     subtotalCents += itemTotal;
@@ -212,24 +243,18 @@ export function calculateExpenseSplit({
             id: entry.id,
             basis: memberTotals[entry.id]
           }))
-        );
+        )
 
-  // Allocate additional fees proportionally
-  const feeAllocations =
-    feeCents === 0
-      ? netAllocations.map((entry) => ({
-          id: entry.id,
-          cents: 0
-        }))
-      : allocateProportionally(
-          feeCents,
-          netAllocations
-            .filter((entry) => entry.cents > 0)
-            .map((entry) => ({
-              id: entry.id,
-              basis: entry.cents
-            }))
-        );
+  const feeAllocations = allocateAmount(feeCents, feesAllocation, members, memberTotals);
+  const adjustmentAllocations = allocateAmount(
+    Math.abs(roundingAdjustmentCents),
+    adjustmentAllocation,
+    members,
+    memberTotals
+  ).map((entry) => ({
+    ...entry,
+    cents: Math.sign(roundingAdjustmentCents) * entry.cents
+  }));
 
   // Calculate final member payments
   const finalTotals = Object.fromEntries(
@@ -243,8 +268,17 @@ export function calculateExpenseSplit({
   feeAllocations.forEach((entry) => {
     finalTotals[entry.id] += entry.cents;
   });
+  adjustmentAllocations.forEach((entry) => {
+    finalTotals[entry.id] += entry.cents;
+  });
 
-  const grandTotalCents = netSubtotal + feeCents;
+  const grandTotalCents = netSubtotal + feeCents + roundingAdjustmentCents;
+  if (!Number.isSafeInteger(grandTotalCents)) {
+    throw new Error("Final bill total is too large.");
+  }
+  if (grandTotalCents < 0 || Object.values(finalTotals).some((amount) => amount < 0)) {
+    throw new Error("The receipt adjustment is too large for the selected allocation.");
+  }
 
   const allocatedTotal = Object.values(finalTotals).reduce(
     (sum, amount) => sum + amount,
@@ -259,7 +293,10 @@ export function calculateExpenseSplit({
     subtotal: subtotalCents / 100,
     discount: discountCents / 100,
     additionalFees: feeCents / 100,
+    roundingAdjustment: roundingAdjustmentCents / 100,
     grandTotal: grandTotalCents / 100,
+    feesAllocation,
+    adjustmentAllocation,
 
     memberTotals: members.map((member) => ({
       id: member.id,

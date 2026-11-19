@@ -10,6 +10,7 @@ npm run dev
 ```
 
 Run `npm run lint` and `npm run build` to check the application.
+Run `npm test` for receipt-parsing and bill-split calculation tests.
 
 ## Grocery comparison data
 
@@ -19,7 +20,9 @@ The JioMart scrape contains some price/pack entries without a matching product t
 
 ## Bill scanning
 
-Bill images are recognized in the browser with Tesseract.js and are not sent to an OCR service. The browser may download OCR worker and language resources. Review and edit item rows, quantities, prices, discounts, taxes/fees, and the receipt total before adding them. Receipt line totals are converted to unit prices, and the scanner flags totals that do not reconcile. Tax and fees are taken only from explicitly recognized receipt lines; the scanner does not invent a fee to force the total to match. When explicit discounts, fees, and total prove that OCR missed a leading digit in the subtotal, the subtotal is derived from those values. Mismatches remain available in a collapsed review panel and must be corrected or acknowledged before adding. Adding a reviewed bill replaces the current cart. Each item is split equally among its selected participants; there are no consumption-weight settings.
+Bill images are recognized in the browser with Tesseract.js and are not sent to an OCR service. The first scan needs an internet connection to download Tesseract's worker and English-language data; no OCR API key is required. Upload an image or take a photo, check the preview, and review or edit the store, date, item rows, quantities, prices, visible line discounts, tax/fees, receipt adjustment, and printed totals before adding the bill. Receipt row amounts and printed totals are kept as recognized: the scanner does not rewrite printed values to make the arithmetic reconcile. It warns when item rows differ from the printed subtotal or when subtotal, discount, tax/fees, adjustment, and total do not add up. Correct the values or explicitly acknowledge the warning before adding. A signed receipt adjustment supports printed rounding differences. Items are split equally among their selected people; tax/fees and receipt adjustments can be allocated proportionally to item shares or equally across all members. Adding a reviewed bill replaces the current cart.
+
+OCR accuracy depends on image quality, orientation, legibility, and browser support for the image format. The scanner can show the OCR text for review; unsupported image formats should be converted to JPG or PNG. OCR results always require human review before confirming a split.
 
 ## Local MongoDB bill storage
 

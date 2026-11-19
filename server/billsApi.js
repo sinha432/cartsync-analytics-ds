@@ -54,8 +54,20 @@ function normalizeBill(body) {
   const id = cleanText(body.id, 100);
   const name = cleanText(body.name);
   const amount = Number(body.amount);
+  const discount = Number(body.discount ?? 0);
+  const additionalFees = Number(body.additionalFees ?? 0);
+  const roundingAdjustment = Number(body.roundingAdjustment ?? 0);
+  const feesAllocation = body.feesAllocation ?? "proportional";
+  const adjustmentAllocation = body.adjustmentAllocation ?? "proportional";
   if (!id || !name || !Number.isFinite(amount) || amount <= 0) {
     throw new Error("A bill ID, name, and positive total are required.");
+  }
+  if (!Number.isFinite(discount) || discount < 0 ||
+      !Number.isFinite(additionalFees) || additionalFees < 0 ||
+      !Number.isFinite(roundingAdjustment) ||
+      !["equal", "proportional"].includes(feesAllocation) ||
+      !["equal", "proportional"].includes(adjustmentAllocation)) {
+    throw new Error("Bill discount, fees, adjustment, or allocation options are invalid.");
   }
   if (!Array.isArray(body.items) || body.items.length === 0 || body.items.length > MAX_ITEMS_PER_BILL) {
     throw new Error(`A bill must contain between 1 and ${MAX_ITEMS_PER_BILL} items.`);
@@ -65,8 +77,10 @@ function normalizeBill(body) {
     const itemName = cleanText(item?.name);
     const quantity = Number(item?.quantity);
     const total = Number(item?.total);
+    const itemDiscount = Number(item?.discount ?? 0);
     if (!itemName || !Number.isInteger(quantity) || quantity < 1 ||
-        !Number.isFinite(total) || total < 0) {
+        !Number.isFinite(total) || total < 0 ||
+        !Number.isFinite(itemDiscount) || itemDiscount < 0) {
       throw new Error("Each bill item needs a name, positive quantity, and valid total.");
     }
     return {
@@ -74,6 +88,7 @@ function normalizeBill(body) {
       quantity,
       unitPrice: Number.isFinite(Number(item.unitPrice)) ? Number(item.unitPrice) : 0,
       total,
+      discount: itemDiscount,
       consumers: Array.isArray(item.consumers)
         ? item.consumers.filter((consumer) => typeof consumer === "string").slice(0, 100)
         : []
@@ -98,6 +113,11 @@ function normalizeBill(body) {
     _id: id,
     name,
     amount: Math.round(amount * 100) / 100,
+    discount: Math.round(discount * 100) / 100,
+    additionalFees: Math.round(additionalFees * 100) / 100,
+    roundingAdjustment: Math.round(roundingAdjustment * 100) / 100,
+    feesAllocation,
+    adjustmentAllocation,
     category: cleanText(body.category) || "Groceries",
     source: "expense-splitter",
     date: transactionDate.toISOString(),

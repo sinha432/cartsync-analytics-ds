@@ -1,4 +1,4 @@
-const SUMMARY_LINE = /\b(sub\s*total|grand\s*total|total\s*amount|net\s*amount|amount\s*payable|taxable\s*amount|discount|cgst|sgst|igst|gst|tax|delivery\s*fee|service\s*charge|handling\s*charge|invoice|bill\s*no|receipt|payment|upi|barcode|you\s+saved|date|cashier|bill\s*type|gstin|total\s*qty)\b|^\s*items?\s*[:|]/i;
+const SUMMARY_LINE = /^\s*(?:sub\s*total\b|grand\s*total\b|total\s*amount\b|net\s*amount\b|amount\s*payable\b|balance\s+due\b|invoice\s+total\b|bill\s+total\b|taxable\s*amount\b|total\s+discount\b|discount\b|cgst\b|sgst\b|igst\b|gst\b|vat\b|tax\b|tip\b|gratuity\b|round\s*(?:off|up|down)\b|delivery\s*fee\b|service\s*charge\b|handling\s*charge\b|packaging\s*charge\b|convenience\s*fee\b|invoice(?:\s+(?:no|number)\b)?|bill\s*no\b|receipt\b|payment\b|upi\b|barcode\b|you\s+saved\b|date\b|cashier\b|bill\s*type\b|gstin\b|total\s*qty\b|total(?:\s*[:₹$-]|\s+\d)|items?\s*[:|])/i;
 const MONEY_TOKEN = /(?:₹|rs\.?|inr)?\s*(-?\d[\d,]*(?:\.\d{1,2})?)/gi;
 
 function readMoney(value) {
@@ -46,6 +46,17 @@ function wordQuantity(word) {
   const normalized = text
     .replace(/^[iIl|!]([})\]]|q)?$/i, "1")
     .replace(/^(\d+)[})\]]$/, "$1");
+  const quantity = Number(normalized);
+  return Number.isInteger(quantity) && quantity > 0 && quantity <= 10000
+    ? quantity
+    : null;
+}
+
+function parseQuantityToken(value) {
+  const normalized = String(value ?? "")
+    .trim()
+    .replace(/[Oo]/g, "0")
+    .replace(/^[iIl|!]([})\]]|q)?$/i, "1");
   const quantity = Number(normalized);
   return Number.isInteger(quantity) && quantity > 0 && quantity <= 10000
     ? quantity
@@ -122,8 +133,22 @@ function parseRowByColumns(line, columns) {
     })
     .reverse()
     .find((word) => wordNumber(word) !== null);
+  const discountStart = Number.isFinite(columns.discount)
+    ? ((Number.isFinite(columns.rate) ? columns.rate : columns.quantity) + columns.discount) / 2
+    : Number.POSITIVE_INFINITY;
+  const discountEnd = Number.isFinite(columns.discount)
+    ? (columns.discount + columns.price) / 2
+    : Number.NEGATIVE_INFINITY;
+  const discountWord = words
+    .filter((word) => {
+      const center = wordCenter(word);
+      return center !== null && center >= discountStart && center < discountEnd;
+    })
+    .reverse()
+    .find((word) => wordNumber(word) !== null);
   const quantity = quantityWord ? wordQuantity(quantityWord) : null;
   const lineTotal = priceWord ? wordNumber(priceWord) : null;
+  const discount = discountWord ? wordNumber(discountWord) : 0;
   if (!quantity || !Number.isInteger(quantity) || quantity > 10000 || !lineTotal || lineTotal <= 0) return null;
 
   const descriptionEnd = Number.isFinite(columns.hsnStart)
@@ -141,7 +166,7 @@ function parseRowByColumns(line, columns) {
     .replace(/\s+/g, " ")
     .trim();
 
-  return name ? { name, quantity, lineTotal } : null;
+  return name ? { name, quantity, lineTotal, discount } : null;
 }
 
 function parsePlainRow(line) {
@@ -151,7 +176,7 @@ function parsePlainRow(line) {
 
   const remainder = serial[2].trim();
   const taxInvoiceColumns = remainder.match(
-    /^(.*?)\s+\d{3,8}\s+([0-9OoIi|!}qQ]{1,4})\s+[\d,]+(?:\.\d{1,2})?\s+[\d,]+(?:\.\d{1,2})?\s+[-‐‑–—]*([\d,]+(?:\.\d{1,2})?)\s*$/
+    /^(.*?)\s+\d{3,8}\s+([0-9OoIi|!}qQ]{1,4})\s+[\d,]+(?:\.\d{1,2})?\s+([\d,]+(?:\.\d{1,2})?)\s+[-‐‑–—]*([\d,]+(?:\.\d{1,2})?)\s*$/
   );
   if (taxInvoiceColumns) {
     const name = taxInvoiceColumns[1].trim();
@@ -159,14 +184,15 @@ function parsePlainRow(line) {
       .replace(/^[iIl|!]([})\]]|q)?$/i, "1")
       .replace(/^(\d+)[})\]]$/, "$1");
     const quantity = Number(quantityText);
-    const lineTotal = readMoney(taxInvoiceColumns[3]);
+    const discount = readMoney(taxInvoiceColumns[3]);
+    const lineTotal = readMoney(taxInvoiceColumns[4]);
     if (name.length >= 2 && Number.isInteger(quantity) && quantity > 0 && quantity <= 10000 && lineTotal > 0) {
-      return { name, quantity, lineTotal };
+      return { name, quantity, lineTotal, discount };
     }
   }
 
   const fourColumns = remainder.match(
-    /^(.*?)\s+(\d{1,4})\s+[\d,]+(?:\.\d{1,2})?\s+[\d,]+(?:\.\d{1,2})?\s+[-‐‑–—]*([\d,]+(?:\.\d{1,2})?)\s*$/
+    /^(.*?)\s+(\d{1,4})\s+[\d,]+(?:\.\d{1,2})?\s+([\d,]+(?:\.\d{1,2})?)\s+[-‐‑–—]*([\d,]+(?:\.\d{1,2})?)\s*$/
   );
   const threeColumns = remainder.match(
     /^(.*?)\s+(\d{1,4})\s+[\d,]+(?:\.\d{1,2})?\s+[-‐‑–—]*([\d,]+(?:\.\d{1,2})?)\s*$/
@@ -176,19 +202,69 @@ function parsePlainRow(line) {
 
   const name = columns[1].replace(/[\s|:;=-]+$/, "").trim();
   const quantity = Number(columns[2]);
-  const lineTotal = readMoney(columns[3]);
+  const hasDiscount = columns === fourColumns;
+  const discount = hasDiscount ? readMoney(columns[3]) : 0;
+  const lineTotal = readMoney(hasDiscount ? columns[4] : columns[3]);
   if (!name || name.length < 2 || !Number.isInteger(quantity) || quantity < 1 || quantity > 10000 || !lineTotal) {
     return null;
   }
 
-  return { name, quantity, lineTotal };
+  return { name, quantity, lineTotal, discount };
 }
 
 function parseFlexibleRow(line) {
   const text = textOf(line);
   if (!text || SUMMARY_LINE.test(text)) return null;
 
-  const row = text.replace(/^\s*\d{1,3}[.)]?\s+/, "");
+  let row = text.replace(/^\s*\d{1,3}[.)]?\s+/, "");
+  row = row.replace(/[-‐‑–—]+\s*$/, "").trim();
+  if (!row) return null;
+
+  // Common receipt formats:
+  //   2 x Milk 30.00 60.00
+  //   Milk 2 x 30.00 = 60.00
+  //   Milk @ 30.00 2 60.00
+  const milkStyle = row.match(
+    /^(.+?)\s+([0-9Oo1lIi|!]{1,4})\s*[x×]\s*(?:₹|rs\.?|inr)?\s*(\d[\d,]*(?:\.\d{1,2})?)\s*(?:=|[-‐‑–—])?\s*(?:₹|rs\.?|inr)?\s*(\d[\d,]*(?:\.\d{1,2})?)\s*$/
+  );
+  if (milkStyle) {
+    const name = milkStyle[1].trim();
+    const quantity = parseQuantityToken(milkStyle[2]);
+    const lineTotal = readMoney(milkStyle[5] ?? milkStyle[4]);
+    if (name && quantity && lineTotal > 0) return { name, quantity, lineTotal };
+  }
+
+  const atPrice = row.match(
+    /^(.+?)\s*@\s*(?:₹|rs\.?|inr)?\s*(\d[\d,]*(?:\.\d{1,2})?)\s*$/
+  );
+  if (atPrice) {
+    const name = atPrice[1].trim();
+    const lineTotal = readMoney(atPrice[2]);
+    if (name && lineTotal > 0) return { name, quantity: 1, lineTotal };
+  }
+
+  const prefixedQuantity = row.match(
+    /^(.+?)[\s:]*([0-9Oo1lIi|!]{1,4})\s*[x×]\s*(?:₹|rs\.?|inr)?\s*(\d[\d,]*(?:\.\d{1,2})?)\s*(?:=|of)?\s*(?:₹|rs\.?|inr)?\s*(\d[\d,]*(?:\.\d{1,2})?)\s*$/
+  );
+  if (prefixedQuantity) {
+    const name = prefixedQuantity[1].trim();
+    const quantity = parseQuantityToken(prefixedQuantity[2]);
+    const lineTotal = readMoney(prefixedQuantity[4]);
+    if (name && quantity && lineTotal > 0) return { name, quantity, lineTotal };
+  }
+
+  const quantityByAt = row.match(
+    /^(.*?)\s*(?:qty\.?|quantity)?\s*[×x]?\s*(\d{1,4})\s*@\s*(?:₹|rs\.?|inr)?\s*(\d[\d,]*(?:\.\d{1,2})?)\s*(?:=|[-‐‑–—]?)\s*(?:₹|rs\.?|inr)?\s*(\d[\d,]*(?:\.\d{1,2})?)\s*$/
+  );
+  if (quantityByAt) {
+    const name = quantityByAt[1].replace(/[\s|:;=-]+$/, "").trim();
+    const quantity = Number(quantityByAt[2]);
+    const lineTotal = readMoney(quantityByAt[4]);
+    if (name.length >= 2 && quantity > 0 && quantity <= 10000 && lineTotal > 0) {
+      return { name, quantity, lineTotal };
+    }
+  }
+
   const matches = [...row.matchAll(MONEY_TOKEN)];
   const lastMatch = matches.at(-1);
   if (!lastMatch || !/^[\s.)-]*$/.test(row.slice(lastMatch.index + lastMatch[0].length))) {
@@ -198,35 +274,46 @@ function parseFlexibleRow(line) {
   const lineTotal = readMoney(lastMatch[1]);
   if (!lineTotal || lineTotal <= 0) return null;
 
-  const firstMatch = matches[0];
-  const possibleQuantity = matches.length > 1
-    ? Number(firstMatch[1].replace(/,/g, ""))
-    : null;
-  const hasQuantity = Number.isInteger(possibleQuantity) &&
-    possibleQuantity > 0 &&
-    possibleQuantity <= 100;
-  const nameEnd = hasQuantity ? firstMatch.index : lastMatch.index;
-  const name = row.slice(0, nameEnd).replace(/[\s|:;=-]+$/, "").trim();
+  let name = row.slice(0, lastMatch.index).trim();
+  let quantity = 1;
+
+  // For "Name 2 60.00", the first numeric token is the quantity.
+  // Keep only plausible quantities and require at least two numeric tokens.
+  if (matches.length >= 2) {
+    const quantityMatch = row.slice(0, lastMatch.index).match(
+      /(?:^|\s)([0Oo1lIi|]{1,4}|[0-9]{1,3}(?:\.0+)?)$/
+    );
+    if (quantityMatch) {
+      const possibleQuantity = parseQuantityToken(quantityMatch[1]);
+      if (possibleQuantity && possibleQuantity <= 100) {
+        const quantityIndex = quantityMatch.index;
+        const candidateName = row.slice(0, quantityIndex).trim();
+        if (candidateName.length >= 2) {
+          name = candidateName;
+          quantity = possibleQuantity;
+        }
+      }
+    }
+  }
+
+  // For "Name 2 @ 30.00" without a repeated line total, derive the total.
+  if (matches.length === 1) {
+    const atPattern = name.match(
+      /^(.+?)\s+([0Oo1lIi|]{1,4})\s*(?:@|×|x)\s*(?:₹|rs\.?|inr)?\s*[\d,.]+\s*$/
+    );
+    if (atPattern) {
+      const possibleQuantity = parseQuantityToken(atPattern[2]);
+      if (possibleQuantity) {
+        name = atPattern[1].trim();
+        quantity = possibleQuantity;
+      }
+    }
+  }
+
+  name = name.replace(/[\s|:;=-]+$/, "").trim();
   if (!/[a-z]{2}/i.test(name)) return null;
 
-  return {
-    name,
-    quantity: hasQuantity ? possibleQuantity : 1,
-    lineTotal
-  };
-}
-
-function parseReceiptItemCounts(lines) {
-  const footer = lines
-    .map(textOf)
-    .find((text) => /\bitems?\s*[:|]/i.test(text) && /\btotal\s*qty\b/i.test(text));
-  if (!footer) return null;
-
-  const itemCount = Number(footer.match(/\bitems?\s*[:|]?\s*(\d+)\b/i)?.[1]);
-  const totalQuantity = Number(footer.match(/\btotal\s*qty\.?\s*[:|]?\s*(\d+)\b/i)?.[1]);
-  return Number.isInteger(itemCount) && Number.isInteger(totalQuantity)
-    ? { itemCount, totalQuantity }
-    : null;
+  return { name, quantity, lineTotal };
 }
 
 function parseSummary(lines) {
@@ -235,11 +322,11 @@ function parseSummary(lines) {
     taxableAmount: null,
     discount: 0,
     additionalFees: 0,
+    roundingAdjustment: 0,
     expectedTotal: null
   };
   let taxFound = false;
   let extraFeeFound = false;
-  let discountFound = false;
 
   for (const line of lines) {
     const text = textOf(line);
@@ -249,17 +336,19 @@ function parseSummary(lines) {
 
     if (/\bsub\s*total\b/i.test(text)) {
       summary.subtotal = amount;
-    } else if (/\b(?:total\s+amount|grand\s*total|net\s*amount|amount\s*payable)\b/i.test(text)) {
+    } else if (/\b(?:total\s+amount|grand\s*total|net\s*amount|amount\s*payable|balance\s+due|invoice\s+total|bill\s+total)\b|^total(?:\s*[:₹$-]|\s+\d)/i.test(text)) {
       summary.expectedTotal = amount;
     } else if (/\btaxable\s+amount\b/i.test(text)) {
       summary.taxableAmount = amount;
     } else if (/\b(?:total\s+)?discount\b|\byou\s+saved\b/i.test(text)) {
       summary.discount = amount;
-      discountFound = true;
-    } else if (/\b(?:cgst|sgst|igst|gst|tax)\b/i.test(text)) {
+    } else if (/\bround\s*(?:off|up|down)\b/i.test(text)) {
+      const sign = /-\s*(?:₹|rs\.?|inr)?\s*\d/i.test(text) ? -1 : 1;
+      summary.roundingAdjustment = Math.round(sign * amount * 100) / 100;
+    } else if (/\b(?:cgst|sgst|igst|gst|vat|tax)\b/i.test(text)) {
       summary.additionalFees += amount;
       taxFound = true;
-    } else if (/\b(?:delivery\s+fee|service\s+charge|handling\s+charge|packaging\s+charge|convenience\s+fee)\b/i.test(text)) {
+    } else if (/\b(?:delivery\s+fee|service\s+charge|handling\s+charge|packaging\s+charge|convenience\s+fee|tip|gratuity)\b/i.test(text)) {
       summary.additionalFees += amount;
       extraFeeFound = true;
     }
@@ -268,7 +357,7 @@ function parseSummary(lines) {
   if (!taxFound && !extraFeeFound) summary.additionalFees = 0;
   summary.discount = Math.round(summary.discount * 100) / 100;
   summary.additionalFees = Math.round(summary.additionalFees * 100) / 100;
-  return { summary, discountFound, explicitFeesFound: taxFound || extraFeeFound };
+  return { summary };
 }
 
 function parseInvoiceDetails(lines) {
@@ -308,9 +397,8 @@ function parseInvoiceDetails(lines) {
 
 export function parseBillScan(ocrData) {
   const lines = flattenOcrLines(ocrData);
-  const receiptItemCounts = parseReceiptItemCounts(lines);
   const header = headerColumns(lines);
-  const { summary, discountFound, explicitFeesFound } = parseSummary(lines);
+  const { summary } = parseSummary(lines);
   const invoice = parseInvoiceDetails(lines);
   const rowLines = header
     ? lines.slice(lines.indexOf(header.header) + 1).filter((line) => {
@@ -319,7 +407,6 @@ export function parseBillScan(ocrData) {
     })
     : lines.filter((line) => !SUMMARY_LINE.test(textOf(line)));
 
-  const seen = new Set();
   const items = [];
   for (const line of rowLines) {
     const parsed = header
@@ -327,59 +414,16 @@ export function parseBillScan(ocrData) {
       : parsePlainRow(line) ?? parseFlexibleRow(line);
     if (!parsed) continue;
 
-    const identity = `${parsed.name.toLocaleLowerCase()}|${parsed.quantity}|${parsed.lineTotal}`;
-    if (seen.has(identity)) continue;
-    seen.add(identity);
     items.push({
       name: parsed.name,
       quantity: parsed.quantity,
       lineTotal: parsed.lineTotal,
+      discount: Number(parsed.discount ?? 0),
       price: Math.round((parsed.lineTotal / parsed.quantity) * 100) / 100
     });
   }
 
-  const parsedItemSubtotal = items.reduce((total, item) => total + item.lineTotal, 0);
-  const parsedTotalQuantity = items.reduce((total, item) => total + item.quantity, 0);
-  const derivedSubtotal = summary.expectedTotal !== null && discountFound &&
-    explicitFeesFound
-    ? moneyDifference(
-      summary.expectedTotal + summary.discount,
-      summary.additionalFees
-    )
-    : null;
-  if (
-    derivedSubtotal !== null &&
-    derivedSubtotal >= parsedItemSubtotal &&
-    (summary.subtotal === null || summary.subtotal < parsedItemSubtotal)
-  ) {
-    summary.subtotal = derivedSubtotal;
-  }
-
-  if (
-    receiptItemCounts &&
-    receiptItemCounts.itemCount === items.length &&
-    receiptItemCounts.totalQuantity === parsedTotalQuantity
-  ) {
-    summary.subtotal = parsedItemSubtotal;
-    if (discountFound && explicitFeesFound) {
-      summary.expectedTotal = moneyDifference(
-        parsedItemSubtotal - summary.discount,
-        -summary.additionalFees
-      );
-    }
-  }
-
-  if (summary.subtotal !== null && summary.taxableAmount !== null && !discountFound) {
-    const derivedDiscount = moneyDifference(summary.subtotal, summary.taxableAmount);
-    if (derivedDiscount !== null) summary.discount = derivedDiscount;
-  }
   return { items, summary, invoice };
-}
-
-function moneyDifference(left, right) {
-  const difference = left - right;
-  if (!Number.isFinite(difference) || difference < 0) return null;
-  return Math.round((difference + Number.EPSILON) * 100) / 100;
 }
 
 export function parseBillItems(text) {

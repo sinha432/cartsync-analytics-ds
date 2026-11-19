@@ -14,18 +14,59 @@ function isValidAmount(value) {
   return value !== "" && Number.isFinite(Number(value)) && Number(value) >= 0;
 }
 
+function isValidAdjustment(value) {
+  return value !== "" && Number.isFinite(Number(value));
+}
+
+async function prepareOcrImage(file) {
+  if (typeof createImageBitmap !== "function") return file;
+
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    throw new Error("This image format could not be opened. Try a JPG or PNG photo.");
+  }
+
+  try {
+    const maxDimension = 3600;
+    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("The browser could not prepare this image for text recognition.");
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+
+    return await new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("The browser could not prepare this image for text recognition."));
+      }, "image/png");
+    });
+  } finally {
+    bitmap.close();
+  }
+}
+
 export default function BillScanner({ members, settings, onAddItems }) {
   const fileInput = useRef(null);
+  const previewUrlRef = useRef("");
   const [file, setFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
   const [reviewItems, setReviewItems] = useState([]);
   const [scanning, setScanning] = useState(false);
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [rawText, setRawText] = useState("");
   const [receiptSubtotal, setReceiptSubtotal] = useState("");
+  const [receiptTaxableAmount, setReceiptTaxableAmount] = useState("");
   const [discount, setDiscount] = useState("0");
   const [additionalFees, setAdditionalFees] = useState("0");
+  const [roundingAdjustment, setRoundingAdjustment] = useState("0");
   const [expectedTotal, setExpectedTotal] = useState("");
+  const [feesAllocation, setFeesAllocation] = useState("proportional");
+  const [adjustmentAllocation, setAdjustmentAllocation] = useState("proportional");
   const [acknowledgeMismatch, setAcknowledgeMismatch] = useState(false);
   const [invoice, setInvoice] = useState({
     storeName: "",
@@ -40,6 +81,11 @@ export default function BillScanner({ members, settings, onAddItems }) {
   const [mongoError, setMongoError] = useState("");
 
   useEffect(() => subscribeToLedger(setTransactions), []);
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    };
+  }, []);
   useEffect(() => {
     const controller = new AbortController();
     async function loadAndSyncBills() {
@@ -99,15 +145,19 @@ export default function BillScanner({ members, settings, onAddItems }) {
     [selectedItems]
   );
   const calculatedTotal = useMemo(() => {
-    if (!isValidAmount(discount) || !isValidAmount(additionalFees)) return null;
-    return moneyInBase(calculatedSubtotal - Number(discount) + Number(additionalFees));
-  }, [calculatedSubtotal, discount, additionalFees]);
+    if (!isValidAmount(discount) || !isValidAmount(additionalFees) ||
+        !isValidAdjustment(roundingAdjustment)) return null;
+    return moneyInBase(
+      calculatedSubtotal - Number(discount) + Number(additionalFees) + Number(roundingAdjustment)
+    );
+  }, [calculatedSubtotal, discount, additionalFees, roundingAdjustment]);
   const splitPreview = useMemo(() => {
     if (selectedItems.length === 0) return { data: null, error: "" };
-    if (!isValidAmount(discount) || !isValidAmount(additionalFees)) {
+    if (!isValidAmount(discount) || !isValidAmount(additionalFees) ||
+        !isValidAdjustment(roundingAdjustment)) {
       return {
         data: null,
-        error: "Enter valid non-negative discount and tax/fee amounts to preview the split."
+        error: "Enter valid discount, tax/fee, and receipt adjustment amounts to preview the split."
       };
     }
 
@@ -124,14 +174,25 @@ export default function BillScanner({ members, settings, onAddItems }) {
             consumers: item.consumers
           })),
           discount: Number(discount),
-          additionalFees: Number(additionalFees)
+          additionalFees: Number(additionalFees),
+          roundingAdjustment: Number(roundingAdjustment),
+          feesAllocation,
+          adjustmentAllocation
         }),
         error: ""
       };
     } catch (previewError) {
       return { data: null, error: previewError.message };
     }
-  }, [selectedItems, members, discount, additionalFees]);
+  }, [
+    selectedItems,
+    members,
+    discount,
+    additionalFees,
+    roundingAdjustment,
+    feesAllocation,
+    adjustmentAllocation
+  ]);
 
   const issues = useMemo(() => {
     const messages = [];
@@ -140,13 +201,29 @@ export default function BillScanner({ members, settings, onAddItems }) {
     } else if (Math.abs(calculatedSubtotal - Number(receiptSubtotal)) > 0.01) {
       messages.push(`Selected item lines total ${formatINR(calculatedSubtotal)}, but the receipt subtotal is ${formatINR(Number(receiptSubtotal))}.`);
     }
+    if (receiptTaxableAmount !== "" && !isValidAmount(receiptTaxableAmount)) {
+      messages.push("Enter a valid non-negative printed taxable amount.");
+    } else if (receiptTaxableAmount !== "" && receiptSubtotal !== "" &&
+        isValidAmount(discount)) {
+      const calculatedTaxableAmount = Number(receiptSubtotal) - Number(discount);
+      if (Math.abs(calculatedTaxableAmount - Number(receiptTaxableAmount)) > 0.01) {
+        messages.push(`Subtotal minus the reviewed discount is ${formatINR(calculatedTaxableAmount)}, but the printed taxable amount is ${formatINR(Number(receiptTaxableAmount))}.`);
+      }
+    }
     if (expectedTotal === "") {
       messages.push("The receipt total was not recognized. Enter it if visible, or confirm that you checked the bill.");
     } else if (calculatedTotal !== null && Math.abs(calculatedTotal - Number(expectedTotal)) > 0.01) {
       messages.push(`Your reviewed total is ${formatINR(calculatedTotal)}, but the receipt total is ${formatINR(Number(expectedTotal))}.`);
     }
     return messages;
-  }, [calculatedSubtotal, calculatedTotal, expectedTotal, receiptSubtotal]);
+  }, [
+    calculatedSubtotal,
+    calculatedTotal,
+    discount,
+    expectedTotal,
+    receiptSubtotal,
+    receiptTaxableAmount
+  ]);
   const billHistory = useMemo(() => {
     const query = historySearch.trim().toLocaleLowerCase();
     const localBills = transactions
@@ -173,9 +250,13 @@ export default function BillScanner({ members, settings, onAddItems }) {
   function resetReview() {
     setReviewItems([]);
     setReceiptSubtotal("");
+    setReceiptTaxableAmount("");
     setExpectedTotal("");
     setDiscount("0");
     setAdditionalFees("0");
+    setRoundingAdjustment("0");
+    setFeesAllocation("proportional");
+    setAdjustmentAllocation("proportional");
     setAcknowledgeMismatch(false);
     setInvoice({
       storeName: "",
@@ -193,19 +274,26 @@ export default function BillScanner({ members, settings, onAddItems }) {
     resetReview();
 
     if (selected && !selected.type.startsWith("image/")) {
-      setFile(null);
+      setSelectedFile(null);
       setError("Choose a bill image file.");
       event.target.value = "";
       return;
     }
 
     if (selected && selected.size > MAX_IMAGE_BYTES) {
-      setFile(null);
+      setSelectedFile(null);
       setError("Choose an image smaller than 12 MB.");
       event.target.value = "";
       return;
     }
 
+    setSelectedFile(selected);
+  }
+
+  function setSelectedFile(selected) {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    previewUrlRef.current = selected ? URL.createObjectURL(selected) : "";
+    setPreviewUrl(previewUrlRef.current);
     setFile(selected);
   }
 
@@ -234,21 +322,32 @@ export default function BillScanner({ members, settings, onAddItems }) {
         }
       });
 
+      setProgress("Preparing the image for text recognition...");
+      const ocrImage = await prepareOcrImage(file);
       let scanResult = null;
+      let bestScore = -1;
       for (const pageSegMode of ["6", "11", "4"]) {
         await worker.setParameters({
           tessedit_pageseg_mode: pageSegMode,
           preserve_interword_spaces: "1"
         });
-        const { data } = await worker.recognize(file, {}, { blocks: true, text: true });
+        const { data } = await worker.recognize(ocrImage, {}, { blocks: true, text: true });
         const parsed = parseBillScan(data);
-        if (!scanResult || parsed.items.length > scanResult.parsed.items.length) {
+        const score = parsed.items.length * 100 +
+          Number(parsed.summary.subtotal !== null) +
+          Number(parsed.summary.expectedTotal !== null) +
+          Number(Boolean(parsed.invoice.storeName));
+        if (score > bestScore) {
+          bestScore = score;
           scanResult = { data, parsed };
         }
-        if (parsed.items.length > 0) break;
         if (pageSegMode !== "4") {
-          setProgress("No item rows found; retrying with alternate receipt layout recognition...");
+          setProgress("Checking another receipt layout to recognize as many rows as possible...");
         }
+      }
+
+      if (!scanResult) {
+        throw new Error("Text recognition did not return a result. Try another image.");
       }
 
       const { data } = scanResult;
@@ -263,27 +362,33 @@ export default function BillScanner({ members, settings, onAddItems }) {
 
       if (items.length === 0) {
         setReceiptSubtotal(summary.subtotal === null ? "" : String(summary.subtotal));
+        setReceiptTaxableAmount(summary.taxableAmount === null ? "" : String(summary.taxableAmount));
         setError("No complete item rows were recognized. Try a clearer, upright photo or add items manually; OCR will not guess missing prices.");
         return;
       }
 
       const consumers = members.map((member) => member.id);
       setReceiptSubtotal(summary.subtotal === null ? "" : String(summary.subtotal));
+      setReceiptTaxableAmount(summary.taxableAmount === null ? "" : String(summary.taxableAmount));
       setDiscount(String(summary.discount));
       setAdditionalFees(String(summary.additionalFees));
+      setRoundingAdjustment(String(summary.roundingAdjustment ?? 0));
       setExpectedTotal(summary.expectedTotal === null ? "" : String(summary.expectedTotal));
       setReviewItems(items.map((item, index) => ({
         ...item,
         id: `${Date.now()}-${index}`,
         quantity: String(item.quantity),
         price: String(item.price),
+        discount: String(item.discount ?? 0),
         included: true,
         consumers
       })));
       setAcknowledgeMismatch(false);
       setProgress(`Found ${items.length} possible item rows. Review item prices and bill totals before adding.`);
     } catch (scanError) {
-      setError(scanError.message || "Unable to scan this bill image. Try another image or add items manually.");
+      setError(scanError.message
+        ? `Could not process this bill image: ${scanError.message}`
+        : "Could not process this bill image. Try another image or add items manually.");
     } finally {
       if (worker) {
         try {
@@ -316,6 +421,12 @@ export default function BillScanner({ members, settings, onAddItems }) {
     setter(value === "" ? "" : String(toBaseCurrency(value, settings)));
   }
 
+  function updateSignedAdjustment(setter, event) {
+    setAcknowledgeMismatch(false);
+    const value = event.target.value;
+    setter(value === "" ? "" : String(toBaseCurrency(value, settings)));
+  }
+
   function addReviewedItems() {
     if (selectedItems.length === 0) {
       setError("Select at least one recognized item to add.");
@@ -329,6 +440,8 @@ export default function BillScanner({ members, settings, onAddItems }) {
       ) ||
       !Number.isInteger(Number(item.quantity)) ||
       Number(item.quantity) < 1 ||
+      !Number.isFinite(Number(item.discount)) ||
+      Number(item.discount) < 0 ||
       item.consumers.length === 0
     )) {
       setError("Each selected item needs a name, positive price and quantity, and at least one person.");
@@ -344,22 +457,27 @@ export default function BillScanner({ members, settings, onAddItems }) {
       );
       if (!confirmed) return;
     }
-    if (!isValidAmount(discount) || !isValidAmount(additionalFees)) {
-      setError("Enter valid non-negative discount and tax/fee amounts.");
+    if (!isValidAmount(discount) || !isValidAmount(additionalFees) ||
+        !isValidAdjustment(roundingAdjustment)) {
+      setError("Enter a valid discount, tax/fee, and receipt adjustment amount.");
       return;
     }
 
     const added = onAddItems(
-      selectedItems.map(({ name, quantity, price, lineTotal, consumers }) => ({
+      selectedItems.map(({ name, quantity, price, lineTotal, discount: itemDiscount, consumers }) => ({
         name: name.trim(),
         quantity: Number(quantity),
         price: Number(price),
+        discount: Number(itemDiscount || 0),
         ...(lineTotal === null || lineTotal === undefined ? {} : { lineTotal }),
         consumers
       })),
       {
         discount: moneyInBase(discount),
-        additionalFees: moneyInBase(additionalFees)
+        additionalFees: moneyInBase(additionalFees),
+        roundingAdjustment: moneyInBase(roundingAdjustment),
+        feesAllocation,
+        adjustmentAllocation
       },
       Object.fromEntries(
         Object.entries(invoice).map(([key, value]) => [key, value.trim() || null])
@@ -368,7 +486,7 @@ export default function BillScanner({ members, settings, onAddItems }) {
     if (added === false) return;
     resetReview();
     setRawText("");
-    setFile(null);
+    setSelectedFile(null);
     setProgress("");
     setError("");
     if (fileInput.current) fileInput.current.value = "";
@@ -418,6 +536,17 @@ export default function BillScanner({ members, settings, onAddItems }) {
           {scanning ? "Scanning..." : "Scan bill"}
         </button>
       </div>
+
+      {previewUrl && (
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-2">
+          <img
+            src={previewUrl}
+            alt={`Preview of ${file?.name ?? "the selected bill"}`}
+            className="mx-auto max-h-80 max-w-full object-contain"
+            onError={() => setError("This image cannot be previewed in the browser. Choose a JPG or PNG image.")}
+          />
+        </div>
+      )}
 
       {progress && <p role="status" aria-live="polite" className="text-sm text-slate-500">{progress}</p>}
       {error && <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{error}</p>}
@@ -475,6 +604,12 @@ export default function BillScanner({ members, settings, onAddItems }) {
               onChange={(event) => updateAdjustment(setReceiptSubtotal, event)}
             />
             <MoneyField
+              label="Printed taxable amount"
+              value={receiptTaxableAmount}
+              settings={settings}
+              onChange={(event) => updateAdjustment(setReceiptTaxableAmount, event)}
+            />
+            <MoneyField
               label="Discount"
               value={discount}
               settings={settings}
@@ -487,6 +622,13 @@ export default function BillScanner({ members, settings, onAddItems }) {
               onChange={(event) => updateAdjustment(setAdditionalFees, event)}
             />
             <MoneyField
+              label="Receipt adjustment"
+              value={roundingAdjustment}
+              settings={settings}
+              allowNegative
+              onChange={(event) => updateSignedAdjustment(setRoundingAdjustment, event)}
+            />
+            <MoneyField
               label="Receipt total"
               value={expectedTotal}
               settings={settings}
@@ -495,7 +637,20 @@ export default function BillScanner({ members, settings, onAddItems }) {
             <SummaryAmount
               label="Calculated total"
               value={calculatedTotal === null ? "Enter valid adjustments" : formatINR(calculatedTotal)}
-              detail="Subtotal − discount + tax/fees"
+              detail="Subtotal − discount + tax/fees + receipt adjustment"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <AllocationField
+              label="Tax and fees allocation"
+              value={feesAllocation}
+              onChange={setFeesAllocation}
+            />
+            <AllocationField
+              label="Receipt adjustment allocation"
+              value={adjustmentAllocation}
+              onChange={setAdjustmentAllocation}
             />
           </div>
 
@@ -531,7 +686,7 @@ export default function BillScanner({ members, settings, onAddItems }) {
 
           {reviewItems.map((item) => (
             <article key={item.id} className="space-y-3 rounded-xl border border-slate-200 p-3 sm:p-4">
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-[auto_minmax(0,1fr)_100px_130px]">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-[auto_minmax(0,1fr)_110px_80px_120px]">
                 <label className="flex items-center justify-center px-2">
                   <input
                     type="checkbox"
@@ -546,6 +701,20 @@ export default function BillScanner({ members, settings, onAddItems }) {
                   onChange={(event) => updateItem(item.id, { name: event.target.value })}
                   placeholder="Product name"
                   aria-label="Recognized product name"
+                  className="min-w-0 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={item.discount === "" ? "" : fromBaseCurrency(item.discount, settings)}
+                  onChange={(event) => updateItem(item.id, {
+                    discount: event.target.value === ""
+                      ? ""
+                      : String(toBaseCurrency(event.target.value, settings))
+                  })}
+                  aria-label={`Receipt discount for ${item.name} in ${settings.currency}`}
+                  placeholder="Discount"
                   className="min-w-0 rounded-lg border border-slate-200 px-3 py-2 text-sm"
                 />
                 <input
@@ -736,18 +905,34 @@ function SummaryAmount({ label, value, detail }) {
   );
 }
 
-function MoneyField({ label, value, settings, onChange }) {
+function MoneyField({ label, value, settings, onChange, allowNegative = false }) {
   return (
     <label className="min-w-0">
       <span className="text-xs text-slate-500">{label} ({settings.currency})</span>
       <input
         type="number"
-        min="0"
+        min={allowNegative ? undefined : "0"}
         step="0.01"
         value={value === "" ? "" : fromBaseCurrency(value, settings)}
         onChange={onChange}
         className="mt-1 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
       />
+    </label>
+  );
+}
+
+function AllocationField({ label, value, onChange }) {
+  return (
+    <label className="min-w-0">
+      <span className="text-xs text-slate-500">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-1 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+      >
+        <option value="proportional">Proportional to item shares</option>
+        <option value="equal">Equally across all people</option>
+      </select>
     </label>
   );
 }

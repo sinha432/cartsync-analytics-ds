@@ -119,6 +119,11 @@ export function addTransaction({
   items = [],
   memberAllocations = [],
   invoice = null,
+  discount = 0,
+  additionalFees = 0,
+  roundingAdjustment = 0,
+  feesAllocation = "proportional",
+  adjustmentAllocation = "proportional",
   id = createId(),
 }) {
   const cleanName = String(name || "").trim();
@@ -130,6 +135,17 @@ export function addTransaction({
 
   if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
     throw new Error("Purchase amount must be greater than zero.");
+  }
+
+  const purchaseDiscount = Number(discount);
+  const purchaseFees = Number(additionalFees);
+  const purchaseAdjustment = Number(roundingAdjustment);
+  if (!Number.isFinite(purchaseDiscount) || purchaseDiscount < 0 ||
+      !Number.isFinite(purchaseFees) || purchaseFees < 0 ||
+      !Number.isFinite(purchaseAdjustment) ||
+      !["equal", "proportional"].includes(feesAllocation) ||
+      !["equal", "proportional"].includes(adjustmentAllocation)) {
+    throw new Error("Purchase discount, fees, adjustment, or allocation options are invalid.");
   }
 
   if (!Number.isFinite(new Date(date).getTime())) {
@@ -147,6 +163,11 @@ export function addTransaction({
     memberAllocations: Array.isArray(memberAllocations)
       ? memberAllocations
       : [],
+    discount: Math.round(purchaseDiscount * 100) / 100,
+    additionalFees: Math.round(purchaseFees * 100) / 100,
+    roundingAdjustment: Math.round(purchaseAdjustment * 100) / 100,
+    feesAllocation,
+    adjustmentAllocation,
     ...(invoice && typeof invoice === "object"
       ? {
           invoice: {

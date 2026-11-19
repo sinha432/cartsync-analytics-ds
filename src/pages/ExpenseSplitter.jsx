@@ -121,6 +121,15 @@ export default function ExpenseSplitter() {
   const [additionalFees, setAdditionalFees] = useState(
     () => savedData?.additionalFees ?? "0"
   );
+  const [roundingAdjustment, setRoundingAdjustment] = useState(
+    () => savedData?.roundingAdjustment ?? "0"
+  );
+  const [feesAllocation, setFeesAllocation] = useState(
+    () => savedData?.feesAllocation ?? "proportional"
+  );
+  const [adjustmentAllocation, setAdjustmentAllocation] = useState(
+    () => savedData?.adjustmentAllocation ?? "proportional"
+  );
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -142,6 +151,9 @@ export default function ExpenseSplitter() {
           items,
           discount,
           additionalFees,
+          roundingAdjustment,
+          feesAllocation,
+          adjustmentAllocation,
           invoiceDetails
         })
       );
@@ -149,7 +161,16 @@ export default function ExpenseSplitter() {
       console.error("Unable to save CartSync expense data:", storageError);
       setError("Unable to save data in this browser. Check browser storage settings.");
     }
-  }, [members, items, discount, additionalFees, invoiceDetails]);
+  }, [
+    members,
+    items,
+    discount,
+    additionalFees,
+    roundingAdjustment,
+    feesAllocation,
+    adjustmentAllocation,
+    invoiceDetails
+  ]);
 
   // Calculate the expense split
   const result = useMemo(() => {
@@ -159,7 +180,10 @@ export default function ExpenseSplitter() {
           members,
           items,
           discount: Number(discount),
-          additionalFees: Number(additionalFees)
+          additionalFees: Number(additionalFees),
+          roundingAdjustment: Number(roundingAdjustment),
+          feesAllocation,
+          adjustmentAllocation
         }),
         error: ""
       };
@@ -169,7 +193,15 @@ export default function ExpenseSplitter() {
         error: err.message
       };
     }
-  }, [members, items, discount, additionalFees]);
+  }, [
+    members,
+    items,
+    discount,
+    additionalFees,
+    roundingAdjustment,
+    feesAllocation,
+    adjustmentAllocation
+  ]);
 
   // Add household member
   const addMember = () => {
@@ -217,6 +249,9 @@ export default function ExpenseSplitter() {
     setItems(newItems);
     setDiscount(String(adjustments.discount));
     setAdditionalFees(String(adjustments.additionalFees));
+    setRoundingAdjustment(String(adjustments.roundingAdjustment ?? 0));
+    setFeesAllocation(adjustments.feesAllocation ?? "proportional");
+    setAdjustmentAllocation(adjustments.adjustmentAllocation ?? "proportional");
     setInvoiceDetails(invoice);
     setError("");
     setSuccess(`${newItems.length} reviewed bill items added to the split.`);
@@ -328,6 +363,9 @@ export default function ExpenseSplitter() {
     setItems([]);
     setDiscount("0");
     setAdditionalFees("0");
+    setRoundingAdjustment("0");
+    setFeesAllocation("proportional");
+    setAdjustmentAllocation("proportional");
     setInvoiceDetails(null);
     setError("");
     setSuccess("");
@@ -368,11 +406,17 @@ export default function ExpenseSplitter() {
       source: "expense-splitter",
       id: transactionId,
       invoice: invoiceDetails,
+      discount: split.discount,
+      additionalFees: split.additionalFees,
+      roundingAdjustment: split.roundingAdjustment,
+      feesAllocation: split.feesAllocation,
+      adjustmentAllocation: split.adjustmentAllocation,
       items: items.map((item) => ({
         name: item.name,
         quantity: item.quantity,
         unitPrice: Number(item.price),
         total: item.lineTotal ?? Number(item.price) * Number(item.quantity),
+        discount: Number(item.discount ?? 0),
         consumers: [...item.consumers],
       })),
       memberAllocations: split.memberTotals.map((member) => ({
@@ -405,6 +449,9 @@ export default function ExpenseSplitter() {
       setItems([]);
       setDiscount("0");
       setAdditionalFees("0");
+      setRoundingAdjustment("0");
+      setFeesAllocation("proportional");
+      setAdjustmentAllocation("proportional");
       setInvoiceDetails(null);
       setError("");
       setSuccess(
@@ -421,6 +468,10 @@ export default function ExpenseSplitter() {
   };
 
   const split = result.data;
+  const memberShareTotal = split?.memberTotals.reduce(
+    (total, member) => total + member.amount,
+    0
+  ) ?? 0;
 
   return (
     <div className="space-y-6">
@@ -580,6 +631,11 @@ export default function ExpenseSplitter() {
                       {item.quantity} × {money(item.price)} =
                       {" "}{money(item.lineTotal ?? item.price * item.quantity)}
                     </p>
+                    {Number(item.discount) > 0 && (
+                      <p className="text-xs text-slate-500 mt-1">
+                        Receipt line discount: {money(item.discount)}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -694,7 +750,36 @@ export default function ExpenseSplitter() {
               className="w-full border rounded-xl p-3 outline-none"
             />
           </div>
+
+          <div>
+            <label className="text-sm text-slate-500 block mb-2">
+              Receipt adjustment ({settings.currency})
+            </label>
+
+            <input
+              type="number"
+              step="0.01"
+              value={roundingAdjustment === "" ? "" : fromBaseCurrency(roundingAdjustment, settings)}
+              onChange={(e) => setRoundingAdjustment(e.target.value === "" ? "" : String(toBaseCurrency(e.target.value, settings)))}
+              className="w-full border rounded-xl p-3 outline-none"
+              aria-label="Receipt adjustment"
+            />
+          </div>
+
+          <AllocationSelect
+            label="Tax and fees allocation"
+            value={feesAllocation}
+            onChange={setFeesAllocation}
+          />
+          <AllocationSelect
+            label="Receipt adjustment allocation"
+            value={adjustmentAllocation}
+            onChange={setAdjustmentAllocation}
+          />
         </div>
+        <p className="mt-3 text-xs text-slate-500">
+          Tax, fees, and adjustments can be split proportionally to item shares or equally across all members.
+        </p>
       </section>
 
       {/* Errors */}
@@ -754,6 +839,13 @@ export default function ExpenseSplitter() {
               <span>{money(split.additionalFees)}</span>
             </div>
 
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-500">Receipt adjustment</span>
+              <span>{split.roundingAdjustment < 0
+                ? `-${money(Math.abs(split.roundingAdjustment))}`
+                : money(split.roundingAdjustment)}</span>
+            </div>
+
             <div className="border-t pt-4 flex justify-between items-center">
               <span className="font-bold">
                 Final Bill
@@ -785,9 +877,7 @@ export default function ExpenseSplitter() {
           <div className="bg-teal-50 rounded-xl p-4 mt-5">
             <p className="text-sm text-teal-900">
               <IndianRupee size={16} className="inline" />
-              {" "}The sum of all individual payments reconciles
-              exactly with the final bill, including discounts
-              and fees.
+              {" "}Combined shares: {money(memberShareTotal)}. This matches the final bill, including discounts, fees, and adjustment.
             </p>
           </div>
 
@@ -807,5 +897,21 @@ export default function ExpenseSplitter() {
         </section>
       )}
     </div>
+  );
+}
+
+function AllocationSelect({ label, value, onChange }) {
+  return (
+    <label className="min-w-0">
+      <span className="text-sm text-slate-500 block mb-2">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full border rounded-xl p-3 outline-none"
+      >
+        <option value="proportional">Proportional to item shares</option>
+        <option value="equal">Equally across all people</option>
+      </select>
+    </label>
   );
 }
